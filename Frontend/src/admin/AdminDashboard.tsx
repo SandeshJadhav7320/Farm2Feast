@@ -29,6 +29,11 @@ import type { ReactNode } from "react";
 
 import { getJwtPayload, logout } from "@/utils/auth";
 
+interface RevenuePoint {
+  date: string;
+  revenue: number;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,6 +49,11 @@ export default function AdminDashboard() {
 
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
   const [revenueError, setRevenueError] = useState(""); 
+
+  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
+  const [chartDays, setChartDays] = useState(7);
+  const [chartLoading, setChartLoading] = useState(true);
+  const [chartError, setChartError] = useState("");
 
   useEffect(() => {
     const fetchRevenue = async () => {
@@ -178,6 +188,41 @@ export default function AdminDashboard() {
     logout();
     navigate("/signin");
   };
+
+  useEffect(() => {
+  const fetchRevenueTrend = async () => {
+    setChartLoading(true);
+    setChartError("");
+
+    try {
+      const token = sessionStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:8080/api/admin/orders/revenue-trend?days=${chartDays}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch revenue trend");
+      }
+
+      const data: RevenuePoint[] = await response.json();
+      setRevenueData(data);
+    } catch (error) {
+      console.error("Error fetching revenue trend:", error);
+      setChartError("Unable to load revenue data.");
+      setRevenueData([]);
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  void fetchRevenueTrend();
+}, [chartDays]);
 
   return (
     <div className="min-h-screen bg-cream-50">
@@ -425,108 +470,144 @@ export default function AdminDashboard() {
           {/* Middle Section */}
           <div className="mt-8 grid gap-6 xl:grid-cols-3">
             
-          {/* Sales Overview */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 xl:col-span-2">
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  Sales Overview
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Revenue performance over time
-                </p>
-              </div>
+         
+{/* Sales Overview */}
+<div className="rounded-2xl border border-gray-200 bg-white p-6 xl:col-span-2">
+  <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h3 className="text-lg font-bold text-gray-900">
+        Sales Overview
+      </h3>
+      <p className="text-sm text-gray-500">
+        Actual revenue from paid, non-cancelled orders
+      </p>
+    </div>
 
-              <select
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-green-700"
-                defaultValue="7"
-              >
-                <option value="7">Last 7 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="90">Last 90 days</option>
-              </select>
-            </div>
+    <select
+      className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-green-700"
+      value={chartDays}
+      onChange={(event) => setChartDays(Number(event.target.value))}
+    >
+      <option value={7}>Last 7 days</option>
+      <option value={30}>Last 30 days</option>
+      <option value={90}>Last 90 days</option>
+    </select>
+  </div>
 
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={[
-                    { day: "Mon", revenue: 1200 },
-                    { day: "Tue", revenue: 2100 },
-                    { day: "Wed", revenue: 1800 },
-                    { day: "Thu", revenue: 3200 },
-                    { day: "Fri", revenue: 2600 },
-                    { day: "Sat", revenue: 4100 },
-                    { day: "Sun", revenue: 3600 },
-                  ]}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="0%"
-                        stopColor="#15803d"
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="#15803d"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
+  <div className="h-72 w-full">
+    {chartLoading ? (
+      <div className="flex h-full items-center justify-center text-sm text-gray-500">
+        Loading revenue data...
+      </div>
+    ) : chartError ? (
+      <div className="flex h-full items-center justify-center text-sm text-red-600">
+        {chartError}
+      </div>
+    ) : revenueData.length === 0 ? (
+      <div className="flex h-full items-center justify-center text-sm text-gray-500">
+        No revenue data available.
+      </div>
+    ) : (
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={revenueData}
+          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient
+              id="revenueGradient"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="0%"
+                stopColor="#15803d"
+                stopOpacity={0.3}
+              />
+              <stop
+                offset="95%"
+                stopColor="#15803d"
+                stopOpacity={0}
+              />
+            </linearGradient>
+          </defs>
 
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="#e5e7eb"
-                  />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke="#e5e7eb"
+          />
 
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                    dy={10}
-                  />
+          <XAxis
+            dataKey="date"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#6b7280", fontSize: 12 }}
+            tickFormatter={(date: string) =>
+              new Date(`${date}T00:00:00`).toLocaleDateString(
+                "en-IN",
+                { day: "numeric", month: "short" }
+              )
+            }
+            dy={10}
+          />
 
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                    tickFormatter={(value: number) => `₹${value}`}
-                    width={65}
-                  />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#6b7280", fontSize: 12 }}
+            tickFormatter={(value: number) =>
+              `₹${value.toLocaleString("en-IN")}`
+            }
+            width={75}
+          />
 
-                  <Tooltip
-                    formatter={(value) => [
-                      `₹${Number(value).toLocaleString("en-IN")}`,
-                      "Revenue",
-                    ]}
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid #e5e7eb",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                    }}
-                  />
+          <Tooltip
+            labelFormatter={(date) =>
+              new Date(`${date}T00:00:00`).toLocaleDateString(
+                "en-IN",
+                {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }
+              )
+            }
+            formatter={(value) => [
+              `₹${Number(value).toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`,
+              "Revenue",
+            ]}
+            contentStyle={{
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+            }}
+          />
 
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#15803d"
-                    strokeWidth={3}
-                    fill="url(#revenueGradient)"
-                    activeDot={{
-                      r: 6,
-                      stroke: "#15803d",
-                      strokeWidth: 2,
-                      fill: "#ffffff",
-                    }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            stroke="#15803d"
+            strokeWidth={3}
+            fill="url(#revenueGradient)"
+            activeDot={{
+              r: 6,
+              stroke: "#15803d",
+              strokeWidth: 2,
+              fill: "#ffffff",
+            }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    )}
+  </div>
+</div>
+
 
 
             {/* Quick Actions */}

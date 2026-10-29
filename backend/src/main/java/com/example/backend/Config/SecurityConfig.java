@@ -75,7 +75,8 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(
                 Arrays.asList(
-                        "http://localhost:5173"
+                        "http://localhost:5173",
+                        "https://farm2feast.netlify.app"
                 )
         );
 
