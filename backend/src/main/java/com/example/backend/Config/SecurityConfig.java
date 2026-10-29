@@ -67,49 +67,34 @@ public class SecurityConfig {
     // CORS CONFIGURATION
     // =========================
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    
+@Bean
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
 
-        CorsConfiguration configuration =
-                new CorsConfiguration();
+    configuration.setAllowedOrigins(Arrays.asList(
+        "http://localhost:5173",
+        "https://farm2feast.netlify.app"
+    ));
 
-        configuration.setAllowedOrigins(
-                Arrays.asList(
-                        "http://localhost:5173",
-                        "https://farm2feast.netlify.app"
-                )
-        );
+    configuration.setAllowedMethods(Arrays.asList(
+        "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+    ));
 
-        configuration.setAllowedMethods(
-                Arrays.asList(
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "PATCH",
-                        "OPTIONS"
-                )
-        );
+    configuration.setAllowedHeaders(Arrays.asList(
+        "Authorization", "Content-Type"
+    ));
 
-        configuration.setAllowedHeaders(
-                Arrays.asList(
-                        "Authorization",
-                        "Content-Type"
-                )
-        );
+    configuration.setAllowCredentials(true);
 
-        configuration.setAllowCredentials(true);
+    UrlBasedCorsConfigurationSource source =
+        new UrlBasedCorsConfigurationSource();
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
 
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+    return source;
+}
 
-        return source;
-    }
 
     // =========================
     // JWT ROLE CONFIGURATION
