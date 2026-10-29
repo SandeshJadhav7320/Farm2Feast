@@ -67,7 +67,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   };
 
   try {
-    const response = await fetch("http://localhost:8080/api/users", {
+    const response = await fetch("https://farm2feast-api.onrender.com/api/users", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
