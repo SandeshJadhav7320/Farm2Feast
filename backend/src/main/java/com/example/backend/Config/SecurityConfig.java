@@ -1,3 +1,4 @@
+
 package com.example.backend.Config;
 
 import java.nio.charset.StandardCharsets;
@@ -34,7 +35,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecretKey jwtSecretKey(@Value("${jwt.secret}") String secret) {
+    public SecretKey jwtSecretKey(
+            @Value("${jwt.secret}") String secret) {
+
         return new SecretKeySpec(
                 secret.getBytes(StandardCharsets.UTF_8),
                 "HmacSHA256"
@@ -55,9 +58,10 @@ public class SecurityConfig {
                 .build();
     }
 
-    // CORS configuration
+    // CORS CONFIGURATION
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(Arrays.asList(
@@ -66,11 +70,19 @@ public class SecurityConfig {
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
         ));
 
         configuration.setAllowedHeaders(Arrays.asList("*"));
+
         configuration.setAllowCredentials(true);
+
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
@@ -80,26 +92,27 @@ public class SecurityConfig {
         return source;
     }
 
-    // JWT role configuration
+    // JWT ROLE CONFIGURATION
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
+
         JwtGrantedAuthoritiesConverter authoritiesConverter =
                 new JwtGrantedAuthoritiesConverter();
 
         authoritiesConverter.setAuthoritiesClaimName("role");
         authoritiesConverter.setAuthorityPrefix("ROLE_");
 
-        JwtAuthenticationConverter authenticationConverter =
+        JwtAuthenticationConverter converter =
                 new JwtAuthenticationConverter();
 
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(
+        converter.setJwtGrantedAuthoritiesConverter(
                 authoritiesConverter
         );
 
-        return authenticationConverter;
+        return converter;
     }
 
-    // Spring Security configuration
+    // SECURITY FILTER CHAIN
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -110,23 +123,37 @@ public class SecurityConfig {
             .cors(cors ->
                 cors.configurationSource(corsConfigurationSource())
             )
+
             .csrf(csrf -> csrf.disable())
+
             .authorizeHttpRequests(auth -> auth
+
+                // Allow browser preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // Public signup and login APIs
                 .requestMatchers(
-                    "/api/auth/**",
-                    "/api/users",
-                    "/api/users/**"
+                        "/api/auth/**",
+                        "/api/users",
+                        "/api/users/**"
                 ).permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                // Admin APIs
+                .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                // User APIs
                 .requestMatchers("/api/user/**")
-                    .hasAnyRole("USER", "ADMIN")
+                        .hasAnyRole("USER", "ADMIN")
+
+                // All remaining APIs require authentication
                 .anyRequest().authenticated()
             )
+
             .oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwt ->
                     jwt.jwtAuthenticationConverter(
-                        jwtAuthenticationConverter
+                            jwtAuthenticationConverter
                     )
                 )
             );
