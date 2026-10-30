@@ -74,6 +74,7 @@ public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
     configuration.setAllowedOrigins(Arrays.asList(
+        "http://localhost:5173",
         "https://farm2feast.netlify.app"
     ));
 
