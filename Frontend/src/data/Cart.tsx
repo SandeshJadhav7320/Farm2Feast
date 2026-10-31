@@ -40,7 +40,7 @@ const Cart: React.FC = () => {
         }
 
         const response = await fetch(
-          "http://localhost:8080/api/cart",
+          "https://farm2feast.onrender.com/api/cart",
           {
             method: "GET",
             headers: {

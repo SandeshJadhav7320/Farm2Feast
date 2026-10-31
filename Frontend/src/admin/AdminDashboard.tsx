@@ -61,7 +61,7 @@ export default function AdminDashboard() {
         const token = sessionStorage.getItem("token");
 
         const response = await fetch(
-          "http://localhost:8080/api/admin/orders/revenue-summary",
+          "https://farm2feast.onrender.com/api/admin/orders/revenue-summary",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
         const token = sessionStorage.getItem("token");
 
         const response = await fetch(
-          "http://localhost:8080/api/admin/products/count",
+          "https://farm2feast.onrender.com/api/admin/products/count",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
         const token = sessionStorage.getItem("token");
 
         const response = await fetch(
-          "http://localhost:8080/api/admin/orders/count",
+          "https://farm2feast.onrender.com/api/admin/orders/count",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -148,7 +148,7 @@ export default function AdminDashboard() {
         const token = sessionStorage.getItem("token");
 
         const response = await fetch(
-          "http://localhost:8080/api/admin/users/count",
+          "https://farm2feast.onrender.com/api/admin/users/count",
           {
             headers: {
               Authorization: `Bearer ${token}`,

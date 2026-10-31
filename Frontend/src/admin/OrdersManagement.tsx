@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:8080"
+  import.meta.env.VITE_API_URL || "https://farm2feast.onrender.com"
 ).replace(/\/$/, "");
 
 // These values must match your Java OrderStatus enum exactly.

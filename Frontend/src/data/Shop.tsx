@@ -60,7 +60,7 @@ interface CheckoutItem {
   imageUrl: string;
 }
 
-const API_URL = "http://localhost:8080";
+const API_URL = "https://farm2feast.onrender.com";
 
 const Shop: React.FC = () => {
   const navigate = useNavigate();

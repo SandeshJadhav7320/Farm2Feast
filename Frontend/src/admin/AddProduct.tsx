@@ -17,7 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "https://farm2feast.onrender.com";
 
 interface ProductForm {
   name: string;

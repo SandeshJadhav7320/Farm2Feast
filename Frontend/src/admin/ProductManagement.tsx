@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "https://farm2feast.onrender.com";
 const PAGE_SIZE = 15;
 
 interface Product {
