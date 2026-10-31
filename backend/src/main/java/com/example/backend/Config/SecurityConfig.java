@@ -59,30 +59,30 @@ public class SecurityConfig {
     }
 
     // CORS configuration
+    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",
-                "https://farm2feast.netlify.app"
+            "http://localhost:5173",
+            "https://farm2feast.netlify.app"
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS"
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS"
         ));
 
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "Origin"
+            "Authorization",
+            "Content-Type",
+            "Accept"
         ));
 
         configuration.setAllowCredentials(true);
@@ -94,6 +94,7 @@ public class SecurityConfig {
 
         return source;
     }
+
 
     // JWT role configuration
     @Bean
@@ -116,6 +117,7 @@ public class SecurityConfig {
     }
 
     // Security configuration
+    
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -134,30 +136,31 @@ public class SecurityConfig {
 
                 // Public APIs
                 .requestMatchers(
-                        "/api/auth/**",
-                        "/api/users"
+                    "/api/auth/**",
+                    "/api/users",
+                    "/api/users/**"
                 ).permitAll()
 
                 // Admin APIs
                 .requestMatchers("/api/admin/**")
-                .hasRole("ADMIN")
+                    .hasRole("ADMIN")
 
                 // User APIs
                 .requestMatchers("/api/user/**")
-                .hasAnyRole("USER", "ADMIN")
+                    .hasAnyRole("USER", "ADMIN")
 
-                // Other APIs
                 .anyRequest().authenticated()
             )
 
             .oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwt ->
                     jwt.jwtAuthenticationConverter(
-                            jwtAuthenticationConverter
+                        jwtAuthenticationConverter
                     )
                 )
             );
 
         return http.build();
     }
+
 }
