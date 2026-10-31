@@ -39,7 +39,7 @@ export default function SignIn() {
       // Login API request
       // -----------------------------
       const response = await fetch(
-        "https://farm2feast-api.onrender.com/api/auth/login",
+        "https://farm2feast.onrender.com/api/auth/login",
         {
           method: "POST",
           headers: {
