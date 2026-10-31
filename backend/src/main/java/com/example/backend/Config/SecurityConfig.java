@@ -1,33 +1,30 @@
 package com.example.backend.Config;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-
 import org.springframework.security.web.SecurityFilterChain;
-
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 @Configuration
 public class SecurityConfig {
@@ -49,7 +46,6 @@ public class SecurityConfig {
 
     @Bean
     public JwtEncoder jwtEncoder(SecretKey secretKey) {
-
         return NimbusJwtEncoder.withSecretKey(secretKey)
                 .algorithm(MacAlgorithm.HS256)
                 .build();
@@ -57,50 +53,49 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(SecretKey secretKey) {
-
         return NimbusJwtDecoder.withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
     }
 
-    // =========================
-    // CORS CONFIGURATION
-    // =========================
+    // CORS configuration
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
 
-    
+        CorsConfiguration configuration = new CorsConfiguration();
 
-@Bean
-public CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "https://farm2feast.netlify.app"
+        ));
 
-    configuration.setAllowedOrigins(Arrays.asList(
-        "http://localhost:5173",
-        "https://farm2feast.netlify.app"
-    ));
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+        ));
 
-    configuration.setAllowedMethods(Arrays.asList(
-        "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-    ));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin"
+        ));
 
-    configuration.setAllowedHeaders(Arrays.asList(
-        "Authorization", "Content-Type"
-    ));
+        configuration.setAllowCredentials(true);
 
-    configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
 
-    UrlBasedCorsConfigurationSource source =
-        new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
 
-    source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
-    return source;
-}
-
-
-    // =========================
-    // JWT ROLE CONFIGURATION
-    // =========================
-
+    // JWT role configuration
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
 
@@ -108,7 +103,6 @@ public CorsConfigurationSource corsConfigurationSource() {
                 new JwtGrantedAuthoritiesConverter();
 
         authoritiesConverter.setAuthoritiesClaimName("role");
-
         authoritiesConverter.setAuthorityPrefix("ROLE_");
 
         JwtAuthenticationConverter authenticationConverter =
@@ -121,10 +115,7 @@ public CorsConfigurationSource corsConfigurationSource() {
         return authenticationConverter;
     }
 
-    // =========================
-    // SECURITY CONFIGURATION
-    // =========================
-
+    // Security configuration
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -132,11 +123,14 @@ public CorsConfigurationSource corsConfigurationSource() {
             throws Exception {
 
         http
-            .cors(cors -> {})
+            .cors(Customizer.withDefaults())
 
             .csrf(csrf -> csrf.disable())
 
             .authorizeHttpRequests(auth -> auth
+
+                // Allow browser preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // Public APIs
                 .requestMatchers(
@@ -144,23 +138,22 @@ public CorsConfigurationSource corsConfigurationSource() {
                         "/api/users"
                 ).permitAll()
 
-                // ADMIN only
+                // Admin APIs
                 .requestMatchers("/api/admin/**")
                 .hasRole("ADMIN")
 
-                // USER or ADMIN
+                // User APIs
                 .requestMatchers("/api/user/**")
                 .hasAnyRole("USER", "ADMIN")
 
-                // Everything else
-                .anyRequest()
-                .authenticated()
+                // Other APIs
+                .anyRequest().authenticated()
             )
 
             .oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwt ->
                     jwt.jwtAuthenticationConverter(
-                        jwtAuthenticationConverter
+                            jwtAuthenticationConverter
                     )
                 )
             );
