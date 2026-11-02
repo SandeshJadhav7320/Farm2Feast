@@ -9,6 +9,9 @@ import com.example.backend.exception.ProductNotFoundException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -192,5 +195,100 @@ public class ProductService {
 
     public long getTotalProductCount() {
         return productRepository.count();
+        }
+
+
+        public ProductPageResponse searchProducts(
+                String keyword,
+                String category,
+                BigDecimal minPrice,
+                BigDecimal maxPrice,
+                Long cursor,
+                int limit) {
+
+        // Validate pagination limit
+        if (limit < 1 || limit > 50) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Limit must be between 1 and 50"
+                );
+        }
+
+        // Validate price range
+        if (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) < 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Minimum price cannot be negative"
+                );
+        }
+
+        if (maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) < 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Maximum price cannot be negative"
+                );
+        }
+
+        if (minPrice != null && maxPrice != null
+                && minPrice.compareTo(maxPrice) > 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Minimum price cannot be greater than maximum price"
+                );
+        }
+
+        if (cursor != null && cursor < 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Cursor cannot be negative"
+                );
+        }
+
+        // Convert blank filters to null
+        if (keyword != null && keyword.isBlank()) {
+                keyword = null;
+        }
+
+        if (category != null && category.isBlank()) {
+                category = null;
+        }
+
+        // Retrieve one extra product to detect the next page
+        Pageable pageable = PageRequest.of(0, limit + 1);
+
+        List<Product> products = productRepository.searchProducts(
+                keyword,
+                category,
+                minPrice,
+                maxPrice,
+                cursor,
+                pageable
+        );
+
+        // Check whether another page exists
+        boolean hasNext = products.size() > limit;
+
+        // Remove the extra product
+        if (hasNext) {
+                products = products.subList(0, limit);
+        }
+
+        // Calculate the next cursor
+        Long nextCursor = null;
+
+        if (hasNext && !products.isEmpty()) {
+                nextCursor = products.get(products.size() - 1).getId();
+        }
+
+        // Convert Product entities into ProductResponse DTOs
+        List<ProductResponse> responses = products.stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return new ProductPageResponse(
+                responses,
+                nextCursor,
+                hasNext
+        );
         }
 }
