@@ -106,7 +106,7 @@ public class CartService {
     }
 
 
-    public List<CartItemResponse> getCart(String userEmail) {
+        public List<CartItemResponse> getCart(String userEmail) {
 
         // 1. Find logged-in user
         User user = userRepository
@@ -117,39 +117,42 @@ public class CartService {
         // 2. Find user's cart
         Cart cart = cartRepository
                 .findByUser(user)
-                .orElseThrow(() ->
-                        new RuntimeException("Cart not found"));
+                .orElse(null);
 
-        // 3. Get all items from the cart
+        // 3. If cart does not exist, return empty list
+        if (cart == null) {
+                return List.of();
+        }
+
+        // 4. Get all items from cart
         List<CartItem> cartItems =
                 cartItemRepository.findByCart(cart);
 
-        // 4. Convert CartItem entities to response DTOs
+        // 5. Convert cart items into response DTOs
         return cartItems.stream()
                 .map(cartItem -> {
 
-                    Product product = cartItem.getProduct();
+                        Product product = cartItem.getProduct();
 
-                    BigDecimal totalPrice =
-                            product.getPrice()
-                                    .multiply(
-                                            BigDecimal.valueOf(
-                                                    cartItem.getQuantity()
-                                            )
-                                    );
+                        BigDecimal totalPrice =
+                                product.getPrice().multiply(
+                                        BigDecimal.valueOf(
+                                                cartItem.getQuantity()
+                                        )
+                                );
 
-                    return new CartItemResponse(
-                            cartItem.getId(),
-                            product.getId(),
-                            product.getName(),
-                            product.getDescription(),
-                            product.getPrice(),
-                            product.getImageUrl(),
-                            cartItem.getQuantity(),
-                            totalPrice
-                    );
+                        return new CartItemResponse(
+                                cartItem.getId(),
+                                product.getId(),
+                                product.getName(),
+                                product.getDescription(),
+                                product.getPrice(),
+                                product.getImageUrl(),
+                                cartItem.getQuantity(),
+                                totalPrice
+                        );
                 })
                 .collect(Collectors.toList());
-    }
+        }
 
 }
