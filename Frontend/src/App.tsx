@@ -28,6 +28,8 @@ import ProductManagement from "@/admin/ProductManagement";
 import OrdersManagement from "@/admin/OrdersManagement";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
+import AIChatAssistant from "./ai-assistant/components/AIChatAssistant";
+
 /* =========================
    HOME
 ========================= */
@@ -177,6 +179,8 @@ export default function App() {
           element={<OrdersManagement />}
         />
       </Routes>
+
+      <AIChatAssistant />
     </BrowserRouter>
   );
 }
