@@ -14,6 +14,7 @@ import com.example.backend.Cart.dto.CartItemResponse;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CartService {
@@ -155,6 +156,8 @@ public class CartService {
                 .collect(Collectors.toList());
         }
 
+        
+        @Transactional
         public void updateCartItem(
                 Long cartItemId,
                 Integer quantity,
@@ -197,6 +200,7 @@ public class CartService {
         cartItemRepository.save(cartItem);
         }
 
+        @Transactional
         public void removeCartItem(
                 Long cartItemId,
                 String userEmail
