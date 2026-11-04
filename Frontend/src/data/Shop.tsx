@@ -46,6 +46,7 @@ interface Product {
   weight: string;
   image: string;
   stock: number;
+  createdAt?: string;
 }
 
 interface CartItem extends Product {
@@ -142,6 +143,7 @@ const Shop: React.FC = () => {
             rating: 4.8,
             reviews: 0,
             weight: "100g",
+            createdAt: product.createdAt,
           })
         );
 
@@ -193,13 +195,28 @@ const Shop: React.FC = () => {
       case "price-low":
         result.sort((a, b) => a.price - b.price);
         break;
+
       case "price-high":
         result.sort((a, b) => b.price - a.price);
         break;
+
       case "rating":
         result.sort((a, b) => b.rating - a.rating);
         break;
+
+      case "featured":
       default:
+        result.sort((a, b) => {
+          const dateA = a.createdAt
+            ? new Date(a.createdAt).getTime()
+            : 0;
+
+          const dateB = b.createdAt
+            ? new Date(b.createdAt).getTime()
+            : 0;
+
+          return dateB - dateA || b.id - a.id;
+        });
         break;
     }
 
@@ -670,7 +687,7 @@ const Shop: React.FC = () => {
                 aria-label="Sort products"
                 className="w-full appearance-none rounded-2xl border border-[#e6e8e1] bg-white py-4 pl-11 pr-12 text-sm font-semibold text-[#35452b] outline-none transition hover:border-[#b8c9a6] focus:border-[#7b965c] focus:ring-4 focus:ring-[#7b965c]/10"
               >
-                <option value="featured">Featured products</option>
+                <option value="featured">Newest products first</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="rating">Highest Rated</option>
@@ -819,7 +836,7 @@ const Shop: React.FC = () => {
               )}
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {filteredProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
@@ -1319,7 +1336,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       }}
     >
       {/* Product image */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-[#f0f2eb]">
+      <div className="relative aspect-square max-h-[170px] overflow-hidden bg-[#f0f2eb]">
         {product.image ? (
           <img
             src={product.image}
@@ -1363,7 +1380,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Product information */}
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
+      <div className="flex flex-1 flex-col p-3">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff7dd] px-2.5 py-1.5 text-xs font-bold text-[#85691f]">
             <Star size={13} className="fill-current text-amber-400" />
@@ -1408,7 +1425,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             type="button"
             onClick={onAdd}
             disabled={isOutOfStock}
-            className="group/add flex w-full items-center justify-center gap-2 rounded-xl bg-[#7b965c] px-4 py-3.5 font-bold text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-[#657d4d] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none"
+            className="group/add flex w-full items-center justify-center gap-2 rounded-xl bg-[#7b965c] px-4 py-3 font-bold text-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:bg-[#657d4d] hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none"
           >
             <ShoppingBag
               size={18}
