@@ -155,4 +155,70 @@ public class CartService {
                 .collect(Collectors.toList());
         }
 
+        public void updateCartItem(
+                Long cartItemId,
+                Integer quantity,
+                String userEmail
+        ) {
+
+        if (quantity == null || quantity <= 0) {
+                throw new IllegalArgumentException(
+                        "Quantity must be greater than zero"
+                );
+        }
+
+        User user = userRepository
+                .findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        CartItem cartItem = cartItemRepository
+                .findById(cartItemId)
+                .orElseThrow(() ->
+                        new RuntimeException("Cart item not found"));
+
+        if (!cartItem.getCart().getUser().getId().equals(user.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "You are not allowed to modify this cart item"
+                );
+        }
+
+        Product product = cartItem.getProduct();
+
+        if (quantity > product.getQuantity()) {
+                throw new IllegalArgumentException(
+                        "Not enough product stock. Available quantity: "
+                                + product.getQuantity()
+                );
+        }
+
+        cartItem.setQuantity(quantity);
+
+        cartItemRepository.save(cartItem);
+        }
+
+        public void removeCartItem(
+                Long cartItemId,
+                String userEmail
+        ) {
+
+        User user = userRepository
+                .findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        CartItem cartItem = cartItemRepository
+                .findById(cartItemId)
+                .orElseThrow(() ->
+                        new RuntimeException("Cart item not found"));
+
+        if (!cartItem.getCart().getUser().getId().equals(user.getId())) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "You are not allowed to remove this cart item"
+                );
+        }
+
+        cartItemRepository.delete(cartItem);
+        }
+
 }

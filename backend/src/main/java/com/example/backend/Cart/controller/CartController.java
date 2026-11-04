@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.backend.Cart.dto.UpdateCartRequest;
+import org.springframework.http.HttpStatus;
+
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
@@ -48,6 +51,44 @@ public class CartController {
                 cartService.getCart(userEmail);
 
         return ResponseEntity.ok(cartItems);
+    }
+
+    @PutMapping("/update/{cartItemId}")
+    public ResponseEntity<String> updateCartItem(
+            @PathVariable Long cartItemId,
+            @RequestBody UpdateCartRequest request,
+            Authentication authentication
+    ) {
+
+        String userEmail = authentication.getName();
+
+        cartService.updateCartItem(
+                cartItemId,
+                request.getQuantity(),
+                userEmail
+        );
+
+        return ResponseEntity.ok(
+                "Cart quantity updated successfully"
+        );
+    }
+
+    @DeleteMapping("/remove/{cartItemId}")
+    public ResponseEntity<String> removeCartItem(
+            @PathVariable Long cartItemId,
+            Authentication authentication
+    ) {
+
+        String userEmail = authentication.getName();
+
+        cartService.removeCartItem(
+                cartItemId,
+                userEmail
+        );
+
+        return ResponseEntity.ok(
+                "Cart item removed successfully"
+        );
     }
 
 
