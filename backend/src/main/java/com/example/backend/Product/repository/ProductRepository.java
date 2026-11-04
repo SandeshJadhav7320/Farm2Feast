@@ -16,6 +16,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Get only active products
     List<Product> findByActiveTrueOrderByIdAsc(Pageable pageable);
 
+    long countByActiveTrue();
+
     // Get active products after the cursor
     List<Product> findByActiveTrueAndIdGreaterThanOrderByIdAsc(
             Long cursor,

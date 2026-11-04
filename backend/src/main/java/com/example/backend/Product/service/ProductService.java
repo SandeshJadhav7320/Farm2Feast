@@ -75,18 +75,18 @@ public class ProductService {
 
         if (cursor == null) {
 
-            products =
-                    productRepository
-                            .findAllByOrderByIdAsc(pageable);
+                products =
+                        productRepository
+                                .findByActiveTrueOrderByIdAsc(pageable);
 
-        } else {
+                } else {
 
-            products =
-                    productRepository
-                            .findByIdGreaterThanOrderByIdAsc(
-                                    cursor,
-                                    pageable
-                            );
+                products =
+                        productRepository
+                                .findByActiveTrueAndIdGreaterThanOrderByIdAsc(
+                                        cursor,
+                                        pageable
+                                );
         }
 
         boolean hasNext =
@@ -122,7 +122,7 @@ public class ProductService {
     public ProductResponse getProductById(Long id) {
 
         Product product =
-                productRepository.findById(id)
+                productRepository.findByIdAndActiveTrue(id)
                         .orElseThrow(() ->
                                 new ProductNotFoundException(
                                         "Product not found with id: " + id
@@ -137,7 +137,7 @@ public class ProductService {
             ProductRequest request) {
 
         Product product =
-                productRepository.findById(id)
+                productRepository.findByIdAndActiveTrue(id)
                         .orElseThrow(() ->
                                 new ProductNotFoundException(
                                         "Product not found with id: " + id
@@ -173,7 +173,7 @@ public class ProductService {
         @Transactional
         public void deleteProduct(Long id) {
 
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ProductNotFoundException(
                                 "Product not found with id: " + id
@@ -201,8 +201,8 @@ public class ProductService {
         );
     }
 
-    public long getTotalProductCount() {
-        return productRepository.count();
+        public long getTotalProductCount() {
+                return productRepository.countByActiveTrue();
         }
 
 
