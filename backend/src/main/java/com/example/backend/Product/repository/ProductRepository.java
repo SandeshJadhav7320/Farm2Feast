@@ -1,3 +1,4 @@
+
 package com.example.backend.Product.repository;
 
 import com.example.backend.Product.entity.Product;
@@ -12,32 +13,31 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    List<Product> findAllByOrderByIdAsc(Pageable pageable);
+    // Get only active products
+    List<Product> findByActiveTrueOrderByIdAsc(Pageable pageable);
 
-    List<Product> findByIdGreaterThanOrderByIdAsc(
+    // Get active products after the cursor
+    List<Product> findByActiveTrueAndIdGreaterThanOrderByIdAsc(
             Long cursor,
             Pageable pageable
     );
 
+    // Search only active products with optional filters
     @Query("""
             SELECT p FROM Product p
-            WHERE
-                (:cursor IS NULL OR p.id > :cursor)
-                AND
-                (
+            WHERE p.active = true
+                AND (:cursor IS NULL OR p.id > :cursor)
+                AND (
                     :keyword IS NULL
                     OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                     OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 )
-                AND
-                (
+                AND (
                     :category IS NULL
                     OR LOWER(p.category) = LOWER(:category)
                 )
-                AND
-                (:minPrice IS NULL OR p.price >= :minPrice)
-                AND
-                (:maxPrice IS NULL OR p.price <= :maxPrice)
+                AND (:minPrice IS NULL OR p.price >= :minPrice)
+                AND (:maxPrice IS NULL OR p.price <= :maxPrice)
             ORDER BY p.id ASC
             """)
     List<Product> searchProducts(
@@ -48,4 +48,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("cursor") Long cursor,
             Pageable pageable
     );
+
+    // Find a product only if it is active
+    java.util.Optional<Product> findByIdAndActiveTrue(Long id);
 }

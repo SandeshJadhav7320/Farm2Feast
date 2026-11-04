@@ -173,7 +173,6 @@ public class ProductService {
         @Transactional
         public void deleteProduct(Long id) {
 
-        // 1. Check whether the product exists
         Product product = productRepository.findById(id)
                 .orElseThrow(() ->
                         new ProductNotFoundException(
@@ -181,11 +180,9 @@ public class ProductService {
                         )
                 );
 
-        // 2. Remove this product from every user's cart
-        cartItemRepository.deleteAllByProductId(id);
+        product.setActive(false);
 
-        // 3. Delete the product
-        productRepository.delete(product);
+        productRepository.save(product);
         }
 
     private ProductResponse mapToResponse(

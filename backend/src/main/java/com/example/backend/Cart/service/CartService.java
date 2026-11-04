@@ -52,6 +52,12 @@ public class CartService {
                 .orElseThrow(() ->
                         new RuntimeException("Product not found"));
 
+        if (!product.isActive()) {
+                throw new RuntimeException(
+                        "This product is no longer available"
+                );
+        }
+
         // 3. Check quantity
         if (request.getQuantity() == null ||
                 request.getQuantity() <= 0) {
