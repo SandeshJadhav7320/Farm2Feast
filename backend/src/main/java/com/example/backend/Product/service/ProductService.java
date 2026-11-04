@@ -13,6 +13,9 @@ import java.math.BigDecimal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.backend.Cart.repository.CartItemRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -20,13 +23,16 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CloudinaryService cloudinaryService;
+    private final CartItemRepository cartItemRepository;
 
     public ProductService(
             ProductRepository productRepository,
-            CloudinaryService cloudinaryService) {
+            CloudinaryService cloudinaryService,
+         CartItemRepository cartItemRepository) {
 
         this.productRepository = productRepository;
         this.cloudinaryService = cloudinaryService;
+        this.cartItemRepository = cartItemRepository;
     }
 
     public ProductResponse createProduct(
@@ -164,18 +170,23 @@ public class ProductService {
         return mapToResponse(updatedProduct);
     }
 
-    public void deleteProduct(Long id) {
+        @Transactional
+        public void deleteProduct(Long id) {
 
-        Product product =
-                productRepository.findById(id)
-                        .orElseThrow(() ->
-                                new ProductNotFoundException(
-                                        "Product not found with id: " + id
-                                )
-                        );
+        // 1. Check whether the product exists
+        Product product = productRepository.findById(id)
+                .orElseThrow(() ->
+                        new ProductNotFoundException(
+                                "Product not found with id: " + id
+                        )
+                );
 
+        // 2. Remove this product from every user's cart
+        cartItemRepository.deleteAllByProductId(id);
+
+        // 3. Delete the product
         productRepository.delete(product);
-    }
+        }
 
     private ProductResponse mapToResponse(
             Product product) {

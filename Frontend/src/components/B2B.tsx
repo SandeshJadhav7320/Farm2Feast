@@ -37,7 +37,7 @@ export default function B2B() {
               <h2 className="font-display text-4xl lg:text-5xl font-bold text-cream-50 leading-tight">
                 Looking to Stock
                 <br />
-                <span className="shimmer-text">Farm2Feast Makhana?</span>
+                <span className="shimmer-text">Parvati Makhana     Makhana?</span>
               </h2>
 
               <p className="text-cream-200/80 leading-relaxed max-w-md">

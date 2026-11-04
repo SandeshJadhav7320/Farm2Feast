@@ -210,7 +210,7 @@ export default function Navbar() {
             <div className="leading-none">
 
               <span className="font-display text-2xl font-bold text-ink-900 block">
-                Farm2Feast
+                Parvati Makhana 
               </span>
 
               <span className="text-[10px] tracking-[0.2em] text-primary-600 uppercase">

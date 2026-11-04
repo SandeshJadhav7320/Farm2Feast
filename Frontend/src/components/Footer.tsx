@@ -43,7 +43,7 @@ export default function Footer() {
               <span className="font-display font-bold text-white text-lg">F2F</span>
             </div>
             <div className="leading-none">
-              <span className="font-display text-2xl font-bold text-cream-50 block">Farm2Feast</span>
+              <span className="font-display text-2xl font-bold text-cream-50 block">Parvati Makhana </span>
               <span className="text-[10px] tracking-[0.2em] text-primary-400 uppercase">Makhana</span>
             </div>
           </div>
