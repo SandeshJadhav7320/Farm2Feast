@@ -1,89 +1,76 @@
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { sendChatMessage } from "../services/aiService";
 import type { ChatMessage } from "../types/chat";
 
 export function useAIChat() {
-
-  // Unique ID for the current conversation
+  // One conversation ID for this chat session
   const [conversationId, setConversationId] = useState(
     () => crypto.randomUUID()
   );
 
-  // Stores all messages displayed in the chat
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-
-  // Tracks whether the AI is generating a response
   const [isLoading, setIsLoading] = useState(false);
-
-  // Stores error messages
   const [error, setError] = useState<string | null>(null);
 
-  // Send a message to the AI
-  const sendMessage = async (message: string) => {
+  // Prevents rapid duplicate requests before React updates state
+  const requestInProgress = useRef(false);
 
+  const sendMessage = async (message: string) => {
     const trimmedMessage = message.trim();
 
-    if (!trimmedMessage || isLoading) {
+    if (!trimmedMessage || requestInProgress.current) {
       return;
     }
 
+    requestInProgress.current = true;
     setError(null);
+    setIsLoading(true);
 
-    // Create the customer's message
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
       content: trimmedMessage,
     };
 
-    // Display the customer's message immediately
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      userMessage,
-    ]);
-
-    setIsLoading(true);
+    setMessages((previous) => [...previous, userMessage]);
 
     try {
-
-      // Call Spring Boot API
       const data = await sendChatMessage({
         conversationId,
         message: trimmedMessage,
       });
 
-      // Create the AI response message
+      if (!data.response?.trim()) {
+        throw new Error("The AI assistant returned an empty response.");
+      }
+
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
         content: data.response,
       };
 
-      // Display the AI response
-      setMessages((previousMessages) => [
-        ...previousMessages,
-        assistantMessage,
-      ]);
-
+      setMessages((previous) => [...previous, assistantMessage]);
     } catch (err) {
-
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "Something went wrong.";
+          : "Something went wrong. Please try again.";
 
       setError(errorMessage);
-
     } finally {
-
-      // Stop loading whether the request succeeds or fails
+      requestInProgress.current = false;
       setIsLoading(false);
     }
   };
 
-  // Start a completely new conversation
   const resetChat = () => {
+    // Do not reset while a request is still running
+    if (requestInProgress.current) {
+      return;
+    }
+
     setMessages([]);
     setError(null);
     setConversationId(crypto.randomUUID());

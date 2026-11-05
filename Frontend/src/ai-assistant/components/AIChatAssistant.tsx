@@ -21,9 +21,9 @@ export default function AIChatAssistant() {
 
   return (
     <>
-      {isOpen && (
+      <div className={isOpen ? "block" : "hidden"}>
         <AIChatWindow onClose={closeChat} />
-      )}
+      </div>
 
       <AIChatButton
         isOpen={isOpen}
