@@ -2,7 +2,9 @@
 import { getToken } from "../../utils/auth";
 import type { ChatRequest, ChatResponse } from "../types/chat";
 
-const API_BASE_URL = import.meta.env.VITE_AI_API_BASE_URL;
+const API_BASE_URL =
+  import.meta.env.VITE_AI_API_BASE_URL?.replace(/\/+$/, "");
+
 console.log("AI API BASE URL:", API_BASE_URL);
 
 export async function sendChatMessage(
@@ -11,7 +13,7 @@ export async function sendChatMessage(
 
   const token = getToken();
 
-  // Check whether the customer is logged in
+  // Check whether the customer is logged in  
   if (!token) {
     throw new Error("Please log in to use the AI assistant.");
   }
