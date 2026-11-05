@@ -3,6 +3,7 @@ import { getToken } from "../../utils/auth";
 import type { ChatRequest, ChatResponse } from "../types/chat";
 
 const API_BASE_URL = import.meta.env.VITE_AI_API_BASE_URL;
+console.log("AI API BASE URL:", API_BASE_URL);
 
 export async function sendChatMessage(
   request: ChatRequest
