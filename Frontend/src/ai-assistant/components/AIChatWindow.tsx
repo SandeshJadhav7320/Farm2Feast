@@ -56,7 +56,7 @@ export default function AIChatWindow({
   };
 
   return (
-    <div className="ai-chat-window fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-3xl border border-green-100 bg-white shadow-2xl">
+    <div className="ai-chat-window fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 shadow-2xl">
 
       {/* Chat Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-green-800 via-green-700 to-emerald-600 px-4 py-4 text-white">
