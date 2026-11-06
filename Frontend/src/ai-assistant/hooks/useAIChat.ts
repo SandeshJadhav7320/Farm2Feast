@@ -4,7 +4,6 @@ import { sendChatMessage } from "../services/aiService";
 import type { ChatMessage } from "../types/chat";
 
 export function useAIChat() {
-  // One conversation ID for this chat session
   const [conversationId, setConversationId] = useState(
     () => crypto.randomUUID()
   );
@@ -13,7 +12,6 @@ export function useAIChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Prevents rapid duplicate requests before React updates state
   const requestInProgress = useRef(false);
 
   const sendMessage = async (message: string) => {
@@ -49,9 +47,14 @@ export function useAIChat() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: data.response,
+        products: data.products ?? [],
       };
 
-      setMessages((previous) => [...previous, assistantMessage]);
+      setMessages((previous) => [
+        ...previous,
+        assistantMessage,
+      ]);
+
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -59,6 +62,7 @@ export function useAIChat() {
           : "Something went wrong. Please try again.";
 
       setError(errorMessage);
+
     } finally {
       requestInProgress.current = false;
       setIsLoading(false);
@@ -66,7 +70,6 @@ export function useAIChat() {
   };
 
   const resetChat = () => {
-    // Do not reset while a request is still running
     if (requestInProgress.current) {
       return;
     }
