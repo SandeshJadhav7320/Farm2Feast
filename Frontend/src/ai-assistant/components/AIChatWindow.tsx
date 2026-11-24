@@ -108,8 +108,12 @@ const handleVoiceInput = () => {
     );
   };
 
+
   recognition.onerror = (event: any) => {
-    if (event.error === "not-allowed") {
+    console.error("Speech Recognition Error:", event.error);
+    console.error("Speech Recognition Details:", event);
+
+    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
       setVoiceError(
         "Microphone permission denied. Please allow microphone access."
       );
@@ -117,14 +121,21 @@ const handleVoiceInput = () => {
       setVoiceError(
         "No speech detected. Please try speaking again."
       );
-    } else {
+    } else if (event.error === "audio-capture") {
       setVoiceError(
-        "Voice recognition failed. Please try again."
+        "No microphone detected. Check your microphone connection."
       );
+    } else if (event.error === "network") {
+      setVoiceError(
+        "Speech recognition network error. Check your internet connection."
+      );
+    } else {
+      setVoiceError(`Speech recognition error: ${event.error}`);
     }
 
     setIsListening(false);
   };
+
 
   recognition.onend = () => {
     setIsListening(false);
