@@ -6,6 +6,8 @@ import {
   Sparkles,
   LoaderCircle,
   Bot,
+  Mic,
+  MicOff,
 } from "lucide-react";
 
 import { useAIChat } from "../hooks/useAIChat";
@@ -28,6 +30,9 @@ export default function AIChatWindow({
   } = useAIChat();
 
   const [input, setInput] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
+  const recognitionRef = useRef<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +41,12 @@ export default function AIChatWindow({
       behavior: "smooth",
     });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+    };
+  }, []);
 
   const handleSend = async () => {
     const message = input.trim();
@@ -46,6 +57,83 @@ export default function AIChatWindow({
     await sendMessage(message);
   };
 
+
+// Start or stop browser speech recognition
+const handleVoiceInput = () => {
+  setVoiceError("");
+
+  // Browser support check
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    setVoiceError(
+      "Voice recognition is not supported in this browser. Please use Google Chrome."
+    );
+    return;
+  }
+
+  // Stop listening if already active
+  if (isListening) {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+    return;
+  }
+
+  // Create speech recognition instance
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-US";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognitionRef.current = recognition;
+
+  recognition.onstart = () => {
+    setIsListening(true);
+    setVoiceError("");
+  };
+
+  // Receive recognized speech
+  recognition.onresult = (event: any) => {
+    const transcript =
+      event.results[0][0].transcript;
+
+    setInput((previous) =>
+      previous.trim()
+        ? `${previous.trim()} ${transcript}`
+        : transcript
+    );
+  };
+
+  recognition.onerror = (event: any) => {
+    if (event.error === "not-allowed") {
+      setVoiceError(
+        "Microphone permission denied. Please allow microphone access."
+      );
+    } else if (event.error === "no-speech") {
+      setVoiceError(
+        "No speech detected. Please try speaking again."
+      );
+    } else {
+      setVoiceError(
+        "Voice recognition failed. Please try again."
+      );
+    }
+
+    setIsListening(false);
+  };
+
+  recognition.onend = () => {
+    setIsListening(false);
+  };
+
+  recognition.start();
+};
+
+
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
@@ -54,6 +142,7 @@ export default function AIChatWindow({
       handleSend();
     }
   };
+  
 
   return (
     <div className="ai-chat-window fixed bottom-24 right-6 z-50 flex h-[560px] w-[380px] flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 shadow-2xl">
@@ -237,34 +326,77 @@ export default function AIChatWindow({
       {/* Message Input */}
       <div className="border-t border-gray-100 bg-white p-3">
 
-        <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-1.5 transition focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-100">
+        
+          <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-1.5 transition focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-100">
 
-          <textarea
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask me anything..."
-            rows={1}
-            disabled={isLoading}
-            className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-gray-400 disabled:opacity-50"
-          />
+            <textarea
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask me anything..."
+              rows={1}
+              disabled={isLoading}
+              className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-gray-400 disabled:opacity-50"
+            />
 
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            aria-label="Send message"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-700 text-white shadow-sm transition duration-200 hover:scale-105 hover:bg-green-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Send size={18} />
-          </button>
+            {/* Microphone Button */}
+            <button
+              type="button"
+              onClick={handleVoiceInput}
+              disabled={isLoading}
+              aria-label={
+                isListening ? "Stop voice input" : "Start voice input"
+              }
+              title={
+                isListening ? "Stop listening" : "Speak your message"
+              }
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
+                isListening
+                  ? "animate-pulse bg-red-600 hover:bg-red-700"
+                  : "bg-green-700 hover:scale-105 hover:bg-green-800"
+              }`}
+            >
+              {isListening ? (
+                <MicOff size={19} />
+              ) : (
+                <Mic size={19} />
+              )}
+            </button>
 
-        </div>
+            {/* Send Button */}
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              aria-label="Send message"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-700 text-white shadow-sm transition duration-200 hover:scale-105 hover:bg-green-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Send size={18} />
+            </button>
+
+          </div>
+
 
         <p className="mt-2 text-center text-[10px] text-gray-400">
           Powered by Farm2Feast AI
         </p>
 
       </div>
+
+
+          {/* Voice Recognition Status */}
+          {isListening && (
+            <p className="mt-2 text-center text-xs font-medium text-green-700">
+              🎙 Listening... Speak in English
+            </p>
+          )}
+
+          {/* Voice Error */}
+          {voiceError && (
+            <p className="mt-2 text-center text-xs text-red-600">
+              {voiceError}
+            </p>
+          )}
+
 
     </div>
   );
