@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { getJwtPayload, logout } from "@/utils/auth";
+import AdminAIChatAssistant from "../ai-assistant/Admin-Ai/AdminAIChatAssistant";
 
 interface RevenuePoint {
   date: string;
@@ -694,6 +695,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+      <AdminAIChatAssistant />
     </div>
   );
 }
