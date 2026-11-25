@@ -15,7 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { useAdminAIChat } from "../../hooks/useAdminAIChat";
+import { useAdminAIChat } from "../hooks/useAdminAIChat";
 
 interface AdminAIChatWindowProps {
   onClose: () => void;
