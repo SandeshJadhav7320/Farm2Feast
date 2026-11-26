@@ -1,31 +1,27 @@
-
 import { useState } from "react";
 
-import AdminAIChatButton from "./AdminAIChatButton";
 import AdminAIChatWindow from "./AdminAIChatWindow";
 
 export default function AdminAIChatAssistant() {
-
   const [isOpen, setIsOpen] = useState(false);
-
-  const toggleChat = () => {
-    setIsOpen(previous => !previous);
-  };
-
-  const closeChat = () => {
-    setIsOpen(false);
-  };
 
   return (
     <>
-      <div className={isOpen ? "block" : "hidden"}>
-        <AdminAIChatWindow onClose={closeChat} />
-      </div>
+      {/* FLOATING AI BUTTON */}
+      <button
+        onClick={() => setIsOpen((previous) => !previous)}
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-green-700 text-2xl text-white shadow-xl transition hover:scale-110 hover:bg-green-600"
+        title="Open Admin AI Assistant"
+      >
+        🤖
+      </button>
 
-      <AdminAIChatButton
-        isOpen={isOpen}
-        onClick={toggleChat}
-      />
+      {/* SINGLE CHAT WINDOW */}
+      {isOpen && (
+        <AdminAIChatWindow
+          onClose={() => setIsOpen(false)}
+        />
+      )}
     </>
   );
 }

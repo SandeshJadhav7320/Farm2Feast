@@ -1,4 +1,3 @@
-
 import { getToken } from "../../utils/auth";
 
 import type {
@@ -6,7 +5,7 @@ import type {
   AdminChatResponse,
   AdminProductCreateResponse,
   AdminProductUpdateChatResponse,
-  AdminProductUpdateResponse
+  AdminProductUpdateResponse,
 } from "../types/adminAI";
 
 const API_BASE_URL = (
@@ -14,172 +13,174 @@ const API_BASE_URL = (
   "https://farm2feast-ai.onrender.com"
 ).replace(/\/+$/, "");
 
-function getHeaders(): HeadersInit {
-  const token = getToken();
+async function getHeaders() {
+  const token = await getToken();
 
   if (!token) {
-    throw new Error("Please log in using your admin account.");
+    throw new Error("Please login again. Authentication token not found.");
   }
 
   return {
-    Authorization: `Bearer ${token}`
+    Authorization: `Bearer ${token}`,
   };
 }
 
-async function handleError(response: Response, defaultMessage: string) {
-  const error = await response.text();
-
+async function handleError(
+  response: Response,
+  defaultMessage: string
+): Promise<never> {
   if (response.status === 401) {
-    throw new Error("Your session has expired. Please log in again.");
+    throw new Error("Your session has expired. Please login again.");
   }
 
   if (response.status === 403) {
-    throw new Error("Only an admin can use this assistant.");
+    throw new Error("You do not have admin permission.");
   }
 
-  throw new Error(error || defaultMessage);
+  const message = await response.text();
+
+  throw new Error(message || defaultMessage);
 }
 
-// ==========================================
-// ADD PRODUCT CHAT
-// ==========================================
+export const adminAIService = {
+  // ---------------- ADD PRODUCT CHAT ----------------
 
-export async function sendAdminChatMessage(
-  request: AdminChatRequest
-): Promise<AdminChatResponse> {
+  async sendAdminChatMessage(
+    request: AdminChatRequest
+  ): Promise<AdminChatResponse> {
+    const headers = await getHeaders();
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin-ai/chat`,
-    {
-      method: "POST",
-      headers: {
-        ...getHeaders(),
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(request)
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin-ai/chat`,
+      {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
+    if (!response.ok) {
+      await handleError(response, "Unable to process add product request.");
     }
-  );
 
-  if (!response.ok) {
-    await handleError(response, "Unable to contact Admin AI.");
-  }
+    return response.json();
+  },
 
-  return response.json();
-}
+  async confirmAdminProduct(
+    conversationId: string,
+    image: File
+  ): Promise<AdminProductCreateResponse> {
+    const headers = await getHeaders();
 
-// Confirm product creation
-export async function confirmAdminProduct(
-  conversationId: string,
-  image: File
-): Promise<AdminProductCreateResponse> {
-
-  const formData = new FormData();
-  formData.append("image", image);
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin-ai/chat/${encodeURIComponent(conversationId)}/confirm`,
-    {
-      method: "POST",
-      headers: getHeaders(),
-      body: formData
-    }
-  );
-
-  if (!response.ok) {
-    await handleError(response, "Product creation failed.");
-  }
-
-  return response.json();
-}
-
-// Cancel product creation draft
-export async function cancelAdminProductDraft(
-  conversationId: string
-): Promise<void> {
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin-ai/chat/${encodeURIComponent(conversationId)}`,
-    {
-      method: "DELETE",
-      headers: getHeaders()
-    }
-  );
-
-  if (!response.ok) {
-    await handleError(response, "Unable to cancel product draft.");
-  }
-}
-
-// ==========================================
-// UPDATE PRODUCT CHAT
-// ==========================================
-
-export async function sendAdminProductUpdateMessage(
-  request: AdminChatRequest
-): Promise<AdminProductUpdateChatResponse> {
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin-ai/update-chat`,
-    {
-      method: "POST",
-      headers: {
-        ...getHeaders(),
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(request)
-    }
-  );
-
-  if (!response.ok) {
-    await handleError(response, "Unable to contact Product Update AI.");
-  }
-
-  return response.json();
-}
-
-// Confirm product update
-// Image is optional.
-export async function confirmAdminProductUpdate(
-  conversationId: string,
-  image?: File | null
-): Promise<AdminProductUpdateResponse> {
-
-  const formData = new FormData();
-
-  if (image) {
+    const formData = new FormData();
     formData.append("image", image);
-  }
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin-ai/update-chat/${encodeURIComponent(conversationId)}/confirm`,
-    {
-      method: "POST",
-      headers: getHeaders(),
-      body: formData
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin-ai/chat/${conversationId}/confirm`,
+      {
+        method: "POST",
+        headers,
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      await handleError(response, "Unable to add product.");
     }
-  );
 
-  if (!response.ok) {
-    await handleError(response, "Product update failed.");
-  }
+    return response.json();
+  },
 
-  return response.json();
-}
+  async cancelAdminProductDraft(
+    conversationId: string
+  ): Promise<void> {
+    const headers = await getHeaders();
 
-// Cancel product update draft
-export async function cancelAdminProductUpdate(
-  conversationId: string
-): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin-ai/chat/${conversationId}`,
+      {
+        method: "DELETE",
+        headers,
+      }
+    );
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin-ai/update-chat/${encodeURIComponent(conversationId)}`,
-    {
-      method: "DELETE",
-      headers: getHeaders()
+    if (!response.ok) {
+      await handleError(response, "Unable to cancel product draft.");
     }
-  );
+  },
 
-  if (!response.ok) {
-    await handleError(response, "Unable to cancel product update.");
-  }
-}
+  // ---------------- UPDATE PRODUCT CHAT ----------------
+
+  async sendAdminProductUpdateMessage(
+    request: AdminChatRequest
+  ): Promise<AdminProductUpdateChatResponse> {
+    const headers = await getHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin-ai/update-chat`,
+      {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
+    if (!response.ok) {
+      await handleError(response, "Unable to process update product request.");
+    }
+
+    return response.json();
+  },
+
+  async confirmAdminProductUpdate(
+    conversationId: string,
+    image?: File | null
+  ): Promise<AdminProductUpdateResponse> {
+    const headers = await getHeaders();
+
+    const formData = new FormData();
+
+    if (image) {
+      formData.append("image", image);
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin-ai/update-chat/${conversationId}/confirm`,
+      {
+        method: "POST",
+        headers,
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      await handleError(response, "Unable to update product.");
+    }
+
+    return response.json();
+  },
+
+  async cancelAdminProductUpdate(
+    conversationId: string
+  ): Promise<void> {
+    const headers = await getHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin-ai/update-chat/${conversationId}`,
+      {
+        method: "DELETE",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      await handleError(response, "Unable to cancel product update.");
+    }
+  },
+};
