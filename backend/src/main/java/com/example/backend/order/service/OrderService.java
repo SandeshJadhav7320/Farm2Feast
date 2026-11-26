@@ -412,4 +412,16 @@ public class OrderService {
 
         return result;
         }
+
+        @Transactional(readOnly = true)
+        public OrderResponse getOrderByIdForAdmin(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Order not found: " + orderId
+                        ));
+
+        return mapToResponse(order);
+        }
 }

@@ -83,4 +83,13 @@ public class AdminOrderController {
                     orderService.getRevenueTrend(days)
             );
         }
+
+        @GetMapping("/{orderId}")
+        public ResponseEntity<OrderResponse> getOrderById(
+                @PathVariable Long orderId) {
+
+            return ResponseEntity.ok(
+                    orderService.getOrderByIdForAdmin(orderId)
+            );
+        }
 }
