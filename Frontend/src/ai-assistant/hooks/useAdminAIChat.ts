@@ -1,56 +1,42 @@
-import { useState } from "react";
 
-import { adminAIService } from "../services/adminAIService";
+import { useRef, useState } from "react";
+
+import {
+  sendAdminChatMessage,
+  confirmAdminProduct,
+  cancelAdminProductDraft,
+  sendAdminUpdateChatMessage,
+  confirmAdminProductUpdate,
+  cancelAdminProductUpdate
+} from "../services/adminAIService";
 
 import type {
   AdminChatMessage,
-  AdminChatMode,
   AdminProductDraft,
   AdminProductUpdateDraft,
+  AdminChatMode
 } from "../types/adminAI";
 
-type AdminDraft =
-  | AdminProductDraft
-  | AdminProductUpdateDraft
-  | null;
-
-// Automatically identify the operation from the first message.
-function detectChatMode(message: string): AdminChatMode | null {
-  const text = message.toLowerCase();
-
-  const updateWords =
-    /\b(update|edit|change|modify|replace|correct)\b/;
-
-  const addWords =
-    /\b(add|create|insert|new|register)\b/;
-
-  if (updateWords.test(text)) {
-    return "update";
-  }
-
-  if (addWords.test(text)) {
-    return "add";
-  }
-
-  return null;
-}
-
 export function useAdminAIChat() {
-  const [mode, setMode] = useState<AdminChatMode | null>(null);
 
   const [conversationId, setConversationId] =
     useState<string | null>(null);
 
-  const [messages, setMessages] = useState<AdminChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hello Admin! 👋 I am your Farm2Feast AI Assistant. You can ask me to add a new product or update an existing product. What would you like me to do?",
-    },
-  ]);
+  const [mode, setMode] =
+    useState<AdminChatMode>(null);
 
-  const [draft, setDraft] = useState<AdminDraft>(null);
+  const [messages, setMessages] =
+    useState<AdminChatMessage[]>([
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          "Hello Admin! Welcome to Farm2Feast AI. I can help you add new products or update existing products. What would you like to do?"
+      }
+    ]);
+
+  const [draft, setDraft] =
+    useState<AdminProductDraft | AdminProductUpdateDraft | null>(null);
 
   const [readyForConfirmation, setReadyForConfirmation] =
     useState(false);
@@ -59,38 +45,84 @@ export function useAdminAIChat() {
 
   const [error, setError] = useState<string | null>(null);
 
-  function addMessage(
-    role: "user" | "assistant",
-    content: string
-  ) {
-    setMessages((previous) => [
+  const requestInProgress = useRef(false);
+
+  // Detect the operation from the admin's first message.
+  const detectMode = (message: string): AdminChatMode => {
+
+    const text = message.toLowerCase();
+
+    const updatePattern =
+      /\b(update|edit|modify|change|alter|revise)\b/;
+
+    const addPattern =
+      /\b(add|create|insert|new product)\b/;
+
+    if (updatePattern.test(text)) {
+      return "update";
+    }
+
+    if (addPattern.test(text)) {
+      return "add";
+    }
+
+    return null;
+  };
+
+  // Add assistant message
+  const addAssistantMessage = (content: string) => {
+
+    setMessages(previous => [
       ...previous,
       {
-        id: `${Date.now()}-${Math.random()}`,
-        role,
-        content,
-      },
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content
+      }
     ]);
-  }
+  };
 
-  async function sendMessage(message: string) {
-    if (!message.trim() || isLoading) return;
+  // Reset conversation after completion or cancellation.
+  const resetConversation = () => {
+    setConversationId(null);
+    setMode(null);
+    setDraft(null);
+    setReadyForConfirmation(false);
+  };
 
-    setError(null);
+  // ==========================================
+  // SEND CHAT MESSAGE
+  // ==========================================
 
+  const sendMessage = async (message: string) => {
+
+    const trimmedMessage = message.trim();
+
+    if (!trimmedMessage || requestInProgress.current) {
+      return;
+    }
+
+    // Detect Add or Update from the first message.
     let selectedMode = mode;
 
-    // Detect add/update only for the first message.
     if (!selectedMode) {
-      selectedMode = detectChatMode(message);
+      selectedMode = detectMode(trimmedMessage);
 
       if (!selectedMode) {
-        addMessage("user", message);
-
-        addMessage(
-          "assistant",
-          "Would you like me to add a new product or update an existing product? Please mention your action clearly."
-        );
+        setMessages(previous => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "user",
+            content: trimmedMessage
+          },
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content:
+              "Would you like me to add a new product or update an existing product? Please tell me in your own words."
+          }
+        ]);
 
         return;
       }
@@ -98,167 +130,226 @@ export function useAdminAIChat() {
       setMode(selectedMode);
     }
 
-    addMessage("user", message);
+    requestInProgress.current = true;
     setIsLoading(true);
+    setError(null);
+
+    setMessages(previous => [
+      ...previous,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: trimmedMessage
+      }
+    ]);
 
     try {
+
       const request = {
         conversationId,
-        message,
+        message: trimmedMessage
       };
 
       if (selectedMode === "add") {
-        const response =
-          await adminAIService.sendAdminChatMessage(request);
+
+        const response = await sendAdminChatMessage(request);
 
         setConversationId(response.conversationId);
         setDraft(response.draft);
         setReadyForConfirmation(response.readyForConfirmation);
 
-        addMessage("assistant", response.reply);
+        addAssistantMessage(response.reply);
+
       } else {
-        const response =
-          await adminAIService.sendAdminProductUpdateMessage(request);
+
+        const response = await sendAdminUpdateChatMessage(request);
 
         setConversationId(response.conversationId);
         setDraft(response.draft);
         setReadyForConfirmation(response.readyForConfirmation);
 
-        addMessage("assistant", response.reply);
+        addAssistantMessage(response.reply);
       }
+
     } catch (err) {
-      const message =
+
+      const errorMessage =
         err instanceof Error
           ? err.message
           : "Something went wrong.";
 
-      setError(message);
-      addMessage("assistant", `Sorry, ${message}`);
+      setError(errorMessage);
+
     } finally {
+
+      requestInProgress.current = false;
       setIsLoading(false);
     }
-  }
+  };
 
-  async function confirmProduct(image?: File | null) {
-    if (!conversationId || !mode || isLoading) return;
+  // ==========================================
+  // CONFIRM ADD PRODUCT
+  // ==========================================
 
-    if (mode === "add" && !image) {
-      setError("Please select a product image before adding the product.");
+  const confirmProduct = async (image: File) => {
+
+    if (
+      mode !== "add" ||
+      !conversationId ||
+      !readyForConfirmation
+    ) {
+      throw new Error("Please complete the product details first.");
+    }
+
+    if (requestInProgress.current) {
       return;
     }
 
+    requestInProgress.current = true;
     setIsLoading(true);
     setError(null);
 
     try {
-      if (mode === "add") {
-        const result =
-          await adminAIService.confirmAdminProduct(
-            conversationId,
-            image!
-          );
 
-        addMessage(
-          "assistant",
-          result.message || "Product added successfully! 🎉"
-        );
-      } else {
-        const result =
-          await adminAIService.confirmAdminProductUpdate(
-            conversationId,
-            image
-          );
+      const response = await confirmAdminProduct(
+        conversationId,
+        image
+      );
 
-        addMessage(
-          "assistant",
-          `Product updated successfully! 🎉
+      const productName =
+        response.product?.name ||
+        (draft as AdminProductDraft | null)?.name ||
+        "Product";
 
-Product ID: ${result.id}
-Product Name: ${result.name}
-Price: ${result.price}
-Quantity: ${result.quantity}`
-        );
-      }
+      addAssistantMessage(
+        `${response.message} ${productName} has been added successfully.`
+      );
 
       resetConversation();
+
     } catch (err) {
-      const message =
+
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : "Unable to complete the operation.";
+          : "Product creation failed.";
 
-      setError(message);
-      addMessage("assistant", message);
+      setError(errorMessage);
+      throw err;
+
     } finally {
+
+      requestInProgress.current = false;
       setIsLoading(false);
     }
-  }
+  };
 
-  async function cancelDraft() {
-    if (!conversationId || !mode || isLoading) return;
+  // ==========================================
+  // CONFIRM UPDATE PRODUCT
+  // ==========================================
 
+  const confirmProductUpdate = async () => {
+
+    if (
+      mode !== "update" ||
+      !conversationId ||
+      !readyForConfirmation
+    ) {
+      throw new Error("Please review and confirm the product changes first.");
+    }
+
+    if (requestInProgress.current) {
+      return;
+    }
+
+    requestInProgress.current = true;
     setIsLoading(true);
     setError(null);
 
     try {
-      if (mode === "add") {
-        await adminAIService.cancelAdminProductDraft(conversationId);
-      } else {
-        await adminAIService.cancelAdminProductUpdate(conversationId);
-      }
 
-      addMessage("assistant", "Your product operation has been cancelled.");
+      const response = await confirmAdminProductUpdate(
+        conversationId
+      );
+
+      addAssistantMessage(
+        `Product "${response.name}" (ID: ${response.id}) has been updated successfully.`
+      );
 
       resetConversation();
+
     } catch (err) {
-      const message =
+
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : "Unable to cancel operation.";
+          : "Product update failed.";
 
-      setError(message);
+      setError(errorMessage);
+      throw err;
+
     } finally {
+
+      requestInProgress.current = false;
       setIsLoading(false);
     }
-  }
+  };
 
-  function resetConversation() {
-    setMode(null);
-    setConversationId(null);
-    setDraft(null);
-    setReadyForConfirmation(false);
-  }
+  // ==========================================
+  // CANCEL CURRENT DRAFT
+  // ==========================================
 
-  function startNewChat() {
-    if (isLoading) return;
+  const cancelDraft = async () => {
 
-    setMode(null);
-    setConversationId(null);
-    setDraft(null);
-    setReadyForConfirmation(false);
+    if (!conversationId || !mode || requestInProgress.current) {
+      return;
+    }
+
+    requestInProgress.current = true;
+    setIsLoading(true);
     setError(null);
 
-    setMessages([
-      {
-        id: `${Date.now()}`,
-        role: "assistant",
-        content:
-          "Hello Admin! 👋 What would you like me to do? I can help you add a new product or update an existing product.",
-      },
-    ]);
-  }
+    try {
+
+      if (mode === "add") {
+        await cancelAdminProductDraft(conversationId);
+      } else {
+        await cancelAdminProductUpdate(conversationId);
+      }
+
+      addAssistantMessage(
+        "Your current operation has been cancelled. You can start a new request."
+      );
+
+      resetConversation();
+
+    } catch (err) {
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Unable to cancel the operation.";
+
+      setError(errorMessage);
+
+    } finally {
+
+      requestInProgress.current = false;
+      setIsLoading(false);
+    }
+  };
 
   return {
-    mode,
-    conversationId,
     messages,
+    conversationId,
+    mode,
     draft,
     readyForConfirmation,
     isLoading,
     error,
     sendMessage,
     confirmProduct,
-    cancelDraft,
-    startNewChat,
+    confirmProductUpdate,
+    cancelDraft
   };
 }

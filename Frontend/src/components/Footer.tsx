@@ -74,30 +74,51 @@ export default function Footer() {
             ))}
           </div>
         </div>
+            
+
 
         {/* Link columns */}
-        {Object.entries(footerLinks).map(([title, links]) => (
-          <div key={title}>
-            <h4 className="font-display text-lg font-semibold text-cream-50 mb-4">{title}</h4>
-            <ul className="space-y-2.5">
-              {links.map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-sm hover:text-primary-400 transition-colors">
-                    {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+        {/* Link columns */}
+{/* Link columns */}
+{Object.entries(footerLinks).map(([title, links]) => (
+  <div key={title}>
+    <h4 className="font-display text-lg font-semibold text-cream-50 mb-4">
+      {title}
+    </h4>
+
+    <ul className="space-y-2.5">
+      {links.map((link) => (
+        <li key={link}>
+          <a
+            href="#"
+            className="text-sm hover:text-primary-400 transition-colors"
+          >
+            {link}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+))}
+
+{/* Centered Powered By */}
+<div className="lg:col-span-5 flex justify-center items-center">
+  <p className="text-xl md:text-5xl text-primary-400 text-center whitespace-nowrap">
+    Powered by{" "}
+    <span className="text-primary-400 font-5xl">
+      Word Lane Group
+    </span>
+  </p>
+</div>
+            
+      </div>  
 
       {/* Bottom bar */}
       <div className="border-t border-ink-800">
   <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col items-center gap-3 text-xs text-cream-300/50">
 
     <p className="text-center">
-      © 2026 ShheFood. All rights reserved. Made with care in Mithila, Bihar.
+      © 2027 Makhana. All Rights Reserved.
     </p>
 
     <p className="text-center">
