@@ -30,18 +30,19 @@ export default function AdminAIChatWindow({
   onClose
 }: AdminAIChatWindowProps) {
 
-  const {
-    messages,
-    mode,
-    draft,
-    readyForConfirmation,
-    isLoading,
-    error,
-    sendMessage,
-    confirmProduct,
-    confirmProductUpdate,
-    cancelDraft
-  } = useAdminAIChat();
+const {
+  messages,
+  conversationId,
+  mode,
+  draft,
+  readyForConfirmation,
+  isLoading,
+  error,
+  sendMessage,
+  confirmProduct,
+  confirmProductUpdate,
+  cancelDraft
+} = useAdminAIChat();
 
   const [input, setInput] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -521,7 +522,23 @@ export default function AdminAIChatWindow({
 
       {/* CANCEL BUTTON */}
 
-      {conversationIdForCancelPlaceholder && null}
+      {conversationId && mode && (
+        <div className="border-t border-gray-200 bg-white px-3 pt-2">
+          <button
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="
+              flex w-full items-center justify-center gap-2
+              rounded-lg bg-red-600 px-3 py-2
+              text-xs font-semibold text-white
+              hover:bg-red-700 disabled:opacity-50
+            "
+          >
+            <Trash2 size={15} />
+            Cancel current operation
+          </button>
+        </div>
+      )}
 
       {/* MESSAGE INPUT */}
 
