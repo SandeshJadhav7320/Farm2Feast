@@ -5,7 +5,7 @@ import type {
   AdminChatRequest,
   AdminChatResponse,
   AdminProductCreateResponse
-} from "../types/adminAi";
+} from "../types/adminAI";
 
 const API_BASE_URL = (
   import.meta.env.VITE_AI_API_BASE_URL ||

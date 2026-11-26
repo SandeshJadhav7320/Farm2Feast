@@ -5,12 +5,12 @@ import {
   sendAdminChatMessage,
   confirmAdminProduct,
   cancelAdminProductDraft
-} from "../services/adminAiService";
+} from "../services/adminAIService";
 
 import type {
   AdminChatMessage,
   AdminProductDraft
-} from "../types/adminAi";
+} from "../types/adminAI";
 
 export function useAdminAIChat() {
 
