@@ -4,31 +4,41 @@ import { useRef, useState } from "react";
 import {
   sendAdminChatMessage,
   confirmAdminProduct,
-  cancelAdminProductDraft
+  cancelAdminProductDraft,
+  sendAdminProductUpdateMessage,
+  confirmAdminProductUpdate,
+  cancelAdminProductUpdate
 } from "../services/adminAIService";
 
 import type {
   AdminChatMessage,
-  AdminProductDraft
+  AdminChatMode,
+  AdminProductDraft,
+  AdminProductUpdateDraft
 } from "../types/adminAI";
 
+type CurrentDraft =
+  | AdminProductDraft
+  | AdminProductUpdateDraft
+  | null;
+
 export function useAdminAIChat() {
+
+  const [mode, setMode] = useState<AdminChatMode>("add");
 
   const [conversationId, setConversationId] =
     useState<string | null>(null);
 
-  const [messages, setMessages] =
-    useState<AdminChatMessage[]>([
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content:
-          "Hello Admin! I can help you add products. Tell me which product you want to add."
-      }
-    ]);
+  const [messages, setMessages] = useState<AdminChatMessage[]>([
+    {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content:
+        "Hello Admin! I can help you add products. Tell me which product you want to add."
+    }
+  ]);
 
-  const [draft, setDraft] =
-    useState<AdminProductDraft | null>(null);
+  const [draft, setDraft] = useState<CurrentDraft>(null);
 
   const [readyForConfirmation, setReadyForConfirmation] =
     useState(false);
@@ -39,7 +49,32 @@ export function useAdminAIChat() {
 
   const requestInProgress = useRef(false);
 
-  // Send a message to AI
+  // Change between Add Product and Update Product.
+  // Mode can only be changed before a conversation starts.
+  const selectMode = (newMode: AdminChatMode) => {
+
+    if (conversationId || requestInProgress.current) {
+      return;
+    }
+
+    setMode(newMode);
+    setDraft(null);
+    setReadyForConfirmation(false);
+    setError(null);
+
+    setMessages([
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          newMode === "add"
+            ? "Hello Admin! I can help you add products. Tell me which product you want to add."
+            : "Hello Admin! I can help you update an existing product. Please tell me the product ID you want to update."
+      }
+    ]);
+  };
+
+  // Send a message to the selected AI.
   const sendMessage = async (message: string) => {
 
     const trimmedMessage = message.trim();
@@ -62,22 +97,46 @@ export function useAdminAIChat() {
 
     try {
 
-      const response = await sendAdminChatMessage({
-        conversationId,
-        message: trimmedMessage
-      });
+      if (mode === "add") {
 
-      setConversationId(response.conversationId);
-      setDraft(response.draft);
-      setReadyForConfirmation(response.readyForConfirmation);
+        const response = await sendAdminChatMessage({
+          conversationId,
+          message: trimmedMessage
+        });
 
-      const assistantMessage: AdminChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: response.reply
-      };
+        setConversationId(response.conversationId);
+        setDraft(response.draft);
+        setReadyForConfirmation(response.readyForConfirmation);
 
-      setMessages(previous => [...previous, assistantMessage]);
+        setMessages(previous => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: response.reply
+          }
+        ]);
+
+      } else {
+
+        const response = await sendAdminProductUpdateMessage({
+          conversationId,
+          message: trimmedMessage
+        });
+
+        setConversationId(response.conversationId);
+        setDraft(response.draft);
+        setReadyForConfirmation(response.readyForConfirmation);
+
+        setMessages(previous => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: response.reply
+          }
+        ]);
+      }
 
     } catch (err) {
 
@@ -95,11 +154,15 @@ export function useAdminAIChat() {
     }
   };
 
-  // Confirm product creation
-  const confirmProduct = async (image: File) => {
+  // Confirm Add Product or Update Product.
+  const confirmProduct = async (image?: File | null) => {
 
     if (!conversationId || !readyForConfirmation) {
       throw new Error("Please complete the product details first.");
+    }
+
+    if (mode === "add" && !image) {
+      throw new Error("Please select a product image first.");
     }
 
     if (requestInProgress.current) {
@@ -112,23 +175,42 @@ export function useAdminAIChat() {
 
     try {
 
-      const response = await confirmAdminProduct(
-        conversationId,
-        image
-      );
+      if (mode === "add") {
 
-      const productName =
-        response.product?.name || draft?.name || "Product";
+        const response = await confirmAdminProduct(
+          conversationId,
+          image as File
+        );
 
-      setMessages(previous => [
-        ...previous,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content:
-            `${response.message} ${productName} has been added successfully.`
-        }
-      ]);
+        const productName =
+          response.product?.name || "Product";
+
+        setMessages(previous => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: `${response.message} ${productName} has been added successfully.`
+          }
+        ]);
+
+      } else {
+
+        const response = await confirmAdminProductUpdate(
+          conversationId,
+          image
+        );
+
+        setMessages(previous => [
+          ...previous,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content:
+              `Product "${response.name}" has been updated successfully.`
+          }
+        ]);
+      }
 
       setConversationId(null);
       setDraft(null);
@@ -139,7 +221,7 @@ export function useAdminAIChat() {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "Product creation failed.";
+          : "Product operation failed.";
 
       setError(errorMessage);
       throw err;
@@ -151,7 +233,7 @@ export function useAdminAIChat() {
     }
   };
 
-  // Cancel current product draft
+  // Cancel the current draft.
   const cancelDraft = async () => {
 
     if (!conversationId || requestInProgress.current) {
@@ -164,14 +246,21 @@ export function useAdminAIChat() {
 
     try {
 
-      await cancelAdminProductDraft(conversationId);
+      if (mode === "add") {
+        await cancelAdminProductDraft(conversationId);
+      } else {
+        await cancelAdminProductUpdate(conversationId);
+      }
 
       setMessages(previous => [
         ...previous,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Your product draft has been cancelled. You can start again."
+          content:
+            mode === "add"
+              ? "Your product draft has been cancelled. You can start again."
+              : "Your product update has been cancelled. You can start again."
         }
       ]);
 
@@ -196,6 +285,8 @@ export function useAdminAIChat() {
   };
 
   return {
+    mode,
+    selectMode,
     messages,
     conversationId,
     draft,
