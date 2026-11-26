@@ -94,14 +94,26 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-ink-800">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-cream-300/50">
-          <p>\u00a9 2026 ShheFood. All rights reserved. Made with care in Mithila, Bihar.</p>
-          <div className="flex gap-4">
-            <a href="#" className="hover:text-primary-400 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-primary-400 transition-colors">Terms of Service</a>
-          </div>
-        </div>
-      </div>
+  <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col items-center gap-3 text-xs text-cream-300/50">
+
+    <p className="text-center">
+      © 2026 ShheFood. All rights reserved. Made with care in Mithila, Bihar.
+    </p>
+
+    <p className="text-center">
+      Designed & Developed by{" "}
+      <a
+        href="https://wordlanetech.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary-400 font-semibold hover:text-primary-300 transition-colors"
+      >
+        Word Lane Tech
+      </a>
+    </p>
+
+  </div>
+</div>
     </footer>
   );
 }
