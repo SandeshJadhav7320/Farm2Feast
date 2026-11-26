@@ -9,7 +9,7 @@ export default function AdminAIChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleChat = () => {
-    setIsOpen((previous) => !previous);
+    setIsOpen(previous => !previous);
   };
 
   const closeChat = () => {
@@ -18,9 +18,9 @@ export default function AdminAIChatAssistant() {
 
   return (
     <>
-      {isOpen && (
+      <div className={isOpen ? "block" : "hidden"}>
         <AdminAIChatWindow onClose={closeChat} />
-      )}
+      </div>
 
       <AdminAIChatButton
         isOpen={isOpen}

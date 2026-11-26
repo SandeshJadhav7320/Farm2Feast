@@ -7,12 +7,6 @@ export interface AdminProductDraft {
   category: string | null;
 }
 
-export interface AdminChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
 export interface AdminChatRequest {
   conversationId: string | null;
   message: string;
@@ -25,11 +19,17 @@ export interface AdminChatResponse {
   readyForConfirmation: boolean;
 }
 
-export interface AdminProductCreatedResponse {
+export interface AdminProductCreateResponse {
   message: string;
-  product: {
+  product?: {
     id?: number;
     name?: string;
     [key: string]: unknown;
   };
+}
+
+export interface AdminChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
 }

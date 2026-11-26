@@ -4,13 +4,13 @@ import { useRef, useState } from "react";
 import {
   sendAdminChatMessage,
   confirmAdminProduct,
-  cancelAdminProductDraft,
-} from "../services/adminAIService";
+  cancelAdminProductDraft
+} from "../services/adminAiService";
 
 import type {
   AdminChatMessage,
-  AdminProductDraft,
-} from "../types/adminAI";
+  AdminProductDraft
+} from "../types/adminAi";
 
 export function useAdminAIChat() {
 
@@ -23,8 +23,8 @@ export function useAdminAIChat() {
         id: crypto.randomUUID(),
         role: "assistant",
         content:
-          "Hello Admin! I can help you add products. Tell me which product you want to add.",
-      },
+          "Hello Admin! I can help you add products. Tell me which product you want to add."
+      }
     ]);
 
   const [draft, setDraft] =
@@ -37,13 +37,9 @@ export function useAdminAIChat() {
 
   const [error, setError] = useState<string | null>(null);
 
-  const [createdProduct, setCreatedProduct] = useState<string | null>(
-    null
-  );
-
   const requestInProgress = useRef(false);
 
-  // Send message to AI
+  // Send a message to AI
   const sendMessage = async (message: string) => {
 
     const trimmedMessage = message.trim();
@@ -55,37 +51,33 @@ export function useAdminAIChat() {
     requestInProgress.current = true;
     setIsLoading(true);
     setError(null);
-    setCreatedProduct(null);
 
     const userMessage: AdminChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: trimmedMessage,
+      content: trimmedMessage
     };
 
-    setMessages((previous) => [...previous, userMessage]);
+    setMessages(previous => [...previous, userMessage]);
 
     try {
 
-      const data = await sendAdminChatMessage({
+      const response = await sendAdminChatMessage({
         conversationId,
-        message: trimmedMessage,
+        message: trimmedMessage
       });
 
-      setConversationId(data.conversationId);
-      setDraft(data.draft);
-      setReadyForConfirmation(data.readyForConfirmation);
+      setConversationId(response.conversationId);
+      setDraft(response.draft);
+      setReadyForConfirmation(response.readyForConfirmation);
 
       const assistantMessage: AdminChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: data.reply,
+        content: response.reply
       };
 
-      setMessages((previous) => [
-        ...previous,
-        assistantMessage,
-      ]);
+      setMessages(previous => [...previous, assistantMessage]);
 
     } catch (err) {
 
@@ -103,10 +95,14 @@ export function useAdminAIChat() {
     }
   };
 
-  // Confirm and create product
+  // Confirm product creation
   const confirmProduct = async (image: File) => {
 
-    if (!conversationId || requestInProgress.current) {
+    if (!conversationId || !readyForConfirmation) {
+      throw new Error("Please complete the product details first.");
+    }
+
+    if (requestInProgress.current) {
       return;
     }
 
@@ -116,29 +112,24 @@ export function useAdminAIChat() {
 
     try {
 
-      const data = await confirmAdminProduct(
+      const response = await confirmAdminProduct(
         conversationId,
         image
       );
 
       const productName =
-        data.product?.name || "Product";
+        response.product?.name || draft?.name || "Product";
 
-      setCreatedProduct(
-        `${productName} added successfully!`
-      );
-
-      setMessages((previous) => [
+      setMessages(previous => [
         ...previous,
         {
           id: crypto.randomUUID(),
           role: "assistant",
           content:
-            `Successfully added ${productName}!`,
-        },
+            `${response.message} ${productName} has been added successfully.`
+        }
       ]);
 
-      // Reset draft after successful creation
       setConversationId(null);
       setDraft(null);
       setReadyForConfirmation(false);
@@ -151,6 +142,7 @@ export function useAdminAIChat() {
           : "Product creation failed.";
 
       setError(errorMessage);
+      throw err;
 
     } finally {
 
@@ -159,7 +151,7 @@ export function useAdminAIChat() {
     }
   };
 
-  // Cancel draft
+  // Cancel current product draft
   const cancelDraft = async () => {
 
     if (!conversationId || requestInProgress.current) {
@@ -174,13 +166,13 @@ export function useAdminAIChat() {
 
       await cancelAdminProductDraft(conversationId);
 
-      setMessages((previous) => [
+      setMessages(previous => [
         ...previous,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Product creation cancelled.",
-        },
+          content: "Your product draft has been cancelled. You can start again."
+        }
       ]);
 
       setConversationId(null);
@@ -189,11 +181,12 @@ export function useAdminAIChat() {
 
     } catch (err) {
 
-      setError(
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : "Unable to cancel the draft."
-      );
+          : "Unable to cancel draft.";
+
+      setError(errorMessage);
 
     } finally {
 
@@ -204,14 +197,13 @@ export function useAdminAIChat() {
 
   return {
     messages,
-    draft,
     conversationId,
+    draft,
     readyForConfirmation,
     isLoading,
     error,
-    createdProduct,
     sendMessage,
     confirmProduct,
-    cancelDraft,
+    cancelDraft
   };
 }

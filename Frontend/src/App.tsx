@@ -4,7 +4,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
+// Home page components
 import Hero from "@/components/Hero";
 import Stats from "@/components/Stats";
 import Marquee from "@/components/Marquee";
@@ -14,6 +16,7 @@ import Story from "@/components/Story";
 import Testimonials from "@/components/Testimonials";
 import B2B from "@/components/B2B";
 
+// Customer pages
 import SignIn from "@/data/SignIn";
 import SignUp from "@/data/SignUp";
 import Cart from "@/data/Cart";
@@ -21,19 +24,16 @@ import Shop from "@/data/Shop";
 import MyOrders from "@/data/MyOrders";
 import Checkout from "@/data/Checkout";
 
-
+// Admin pages
 import AdminDashboard from "@/admin/AdminDashboard";
 import AddProduct from "@/admin/AddProduct";
 import ProductManagement from "@/admin/ProductManagement";
 import OrdersManagement from "@/admin/OrdersManagement";
-import ProtectedRoute from "@/components/ProtectedRoute";
 
+// Customer AI Assistant
 import AIChatAssistant from "./ai-assistant/components/AIChatAssistant";
 
-/* =========================
-   HOME
-========================= */
-
+// Home page
 function Home() {
   return (
     <div className="min-h-screen bg-cream-50 overflow-x-hidden">
@@ -51,14 +51,14 @@ function Home() {
       </main>
 
       <Footer />
+
+      {/* Customer AI Assistant on Home page */}
+      <AIChatAssistant />
     </div>
   );
 }
 
-/* =========================
-   PUBLIC LAYOUT
-========================= */
-
+// Layout for customer pages
 function PublicLayout({
   children,
 }: {
@@ -71,25 +71,25 @@ function PublicLayout({
       <main>{children}</main>
 
       <Footer />
+
+      {/* Customer AI Assistant on customer pages */}
+      <AIChatAssistant />
     </div>
   );
 }
 
-/* =========================
-   APP
-========================= */
-
+// Main App
 export default function App() {
   return (
     <BrowserRouter>
-      {/* Scroll to the top whenever the route changes */}
       <ScrollToTop />
 
       <Routes>
+
         {/* HOME */}
         <Route path="/" element={<Home />} />
 
-        {/* SHOP */}
+        {/* CUSTOMER PAGES */}
         <Route
           path="/shop"
           element={
@@ -99,7 +99,6 @@ export default function App() {
           }
         />
 
-        {/* CART */}
         <Route
           path="/cart"
           element={
@@ -109,7 +108,6 @@ export default function App() {
           }
         />
 
-        {/* MY ORDERS */}
         <Route
           path="/my-orders"
           element={
@@ -119,7 +117,7 @@ export default function App() {
           }
         />
 
-        {/* CHECKOUT - LOGIN REQUIRED */}
+        {/* CUSTOMER LOGIN REQUIRED */}
         <Route element={<ProtectedRoute />}>
           <Route
             path="/checkout"
@@ -131,32 +129,11 @@ export default function App() {
           />
         </Route>
 
-        {/* SIGN IN */}
+        {/* AUTHENTICATION */}
         <Route path="/signin" element={<SignIn />} />
-
-        {/* SIGN UP */}
         <Route path="/signup" element={<SignUp />} />
 
-        {/* ADMIN DASHBOARD */}
-        <Route element={<ProtectedRoute adminOnly />}>
-          <Route
-            path="/admin/dashboard"
-            element={<AdminDashboard />}
-          />
-        </Route>
-
-        <Route element={<ProtectedRoute adminOnly />}>
-          <Route
-            path="/admin/dashboard"
-            element={<AdminDashboard />}
-          />
-
-          <Route
-            path="/admin/products/new"
-            element={<AddProduct />}
-          />
-        </Route>
-
+        {/* ADMIN PAGES - ADMIN ONLY */}
         <Route element={<ProtectedRoute adminOnly />}>
           <Route
             path="/admin/dashboard"
@@ -172,15 +149,14 @@ export default function App() {
             path="/admin/products/new"
             element={<AddProduct />}
           />
+
+          <Route
+            path="/admin/orders"
+            element={<OrdersManagement />}
+          />
         </Route>
 
-        <Route
-          path="/admin/orders"
-          element={<OrdersManagement />}
-        />
       </Routes>
-
-      <AIChatAssistant />
     </BrowserRouter>
   );
 }
