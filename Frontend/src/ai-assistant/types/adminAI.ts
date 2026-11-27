@@ -1,10 +1,15 @@
 
-export interface AdminChatRequest {
+export interface AdminAssistantChatRequest {
   conversationId: string | null;
   message: string;
 }
 
-// Existing Add Product draft
+export type AdminAssistantOperation =
+  | "ADD_PRODUCT"
+  | "UPDATE_PRODUCT"
+  | "ORDER"
+  | "UNKNOWN";
+
 export interface AdminProductDraft {
   name: string | null;
   description: string | null;
@@ -13,31 +18,6 @@ export interface AdminProductDraft {
   category: string | null;
 }
 
-// Existing Add Product chat response
-export interface AdminChatResponse {
-  conversationId: string;
-  reply: string;
-  draft: AdminProductDraft;
-  readyForConfirmation: boolean;
-}
-
-export interface AdminProductCreateResponse {
-  message: string;
-  product?: {
-    id?: number;
-    name?: string;
-    [key: string]: unknown;
-  };
-}
-
-// Existing chat message
-export interface AdminChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
-// New Update Product draft
 export interface AdminProductUpdateDraft {
   productId: number | null;
 
@@ -56,26 +36,38 @@ export interface AdminProductUpdateDraft {
   hasChanges: boolean;
 }
 
-// New Update Product chat response
-export interface AdminProductUpdateChatResponse {
+export interface AdminAssistantChatResponse {
   conversationId: string;
+  operation: AdminAssistantOperation;
   reply: string;
-  draft: AdminProductUpdateDraft;
+  draft: AdminProductDraft | AdminProductUpdateDraft | null;
   readyForConfirmation: boolean;
 }
 
-// Updated product response
-export interface AdminProductUpdateResponse {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  quantity: number;
-  category: string;
-  imageUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
+export interface AdminAssistantConfirmResponse {
+  message?: string;
+
+  product?: {
+    id?: number;
+    name?: string;
+    [key: string]: unknown;
+  };
+
+  id?: number;
+  name?: string;
+
+  [key: string]: unknown;
 }
 
-// Chat operation
-export type AdminChatMode = "add" | "update" | null;
+export interface AdminChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
+
+// The operation selected by the backend for this conversation.
+export type AdminChatMode =
+  | "ADD_PRODUCT"
+  | "UPDATE_PRODUCT"
+  | "ORDER"
+  | null;
