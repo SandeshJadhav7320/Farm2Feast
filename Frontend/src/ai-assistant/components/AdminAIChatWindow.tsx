@@ -27,9 +27,175 @@ interface AdminAIChatWindowProps {
   onClose: () => void;
 }
 
+type OrderRow = Record<string, unknown>;
+
+// ==========================================
+// FORMAT ORDER DATE
+// ==========================================
+
+function formatOrderDate(value: unknown): string {
+  if (!value) return "—";
+
+  const date = new Date(String(value));
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
+}
+
+// ==========================================
+// FORMAT ORDER AMOUNT
+// ==========================================
+
+function formatOrderAmount(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+
+  const amount = Number(value);
+
+  if (Number.isNaN(amount)) {
+    return String(value);
+  }
+
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
+
+// ==========================================
+// ORDER TABLE COMPONENT
+// ==========================================
+
+function OrderTable({
+  data,
+  type
+}: {
+  data: unknown;
+  type?: string | null;
+}) {
+  if (!data) return null;
+
+  const orders: OrderRow[] = Array.isArray(data)
+    ? data as OrderRow[]
+    : typeof data === "object"
+      ? [data as OrderRow]
+      : [];
+
+  if (orders.length === 0) {
+    return (
+      <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-500">
+        No orders found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-3">
+
+        <div>
+          <h4 className="font-bold text-gray-800">
+            {type === "SINGLE_ORDER"
+              ? "Order Details"
+              : "Customer Orders"}
+          </h4>
+
+          <p className="text-xs text-gray-500">
+            {orders.length} order{orders.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        <Package size={19} className="text-green-700" />
+
+      </div>
+
+      <div className="overflow-x-auto">
+
+        <table className="w-full min-w-[650px] border-collapse text-left text-xs">
+
+          <thead className="bg-gray-100 text-gray-600">
+
+            <tr>
+              <th className="px-3 py-3 font-semibold">Order ID</th>
+              <th className="px-3 py-3 font-semibold">Customer</th>
+              <th className="px-3 py-3 font-semibold">Phone</th>
+              <th className="px-3 py-3 font-semibold">Total</th>
+              <th className="px-3 py-3 font-semibold">Order Status</th>
+              <th className="px-3 py-3 font-semibold">Payment</th>
+              <th className="px-3 py-3 font-semibold">Date</th>
+            </tr>
+
+          </thead>
+
+          <tbody className="divide-y divide-gray-100">
+
+            {orders.map((order, index) => (
+
+              <tr
+                key={String(order.id ?? index)}
+                className="hover:bg-green-50"
+              >
+
+                <td className="px-3 py-3 font-semibold text-green-800">
+                  #{String(order.id ?? "—")}
+                </td>
+
+                <td className="px-3 py-3 text-gray-800">
+                  {String(order.deliveryName ?? "—")}
+                </td>
+
+                <td className="px-3 py-3 text-gray-600">
+                  {String(order.phoneNumber ?? "—")}
+                </td>
+
+                <td className="px-3 py-3 font-semibold text-gray-800">
+                  {formatOrderAmount(order.totalAmount)}
+                </td>
+
+                <td className="px-3 py-3">
+                  <span className="inline-block rounded-full bg-blue-100 px-2 py-1 font-medium text-blue-700">
+                    {String(order.status ?? "—")}
+                  </span>
+                </td>
+
+                <td className="px-3 py-3">
+                  <span className="inline-block rounded-full bg-green-100 px-2 py-1 font-medium text-green-700">
+                    {String(order.paymentStatus ?? "—")}
+                  </span>
+                </td>
+
+                <td className="px-3 py-3 text-gray-600">
+                  {formatOrderDate(order.createdAt)}
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div className="border-t border-gray-100 px-3 py-2 text-[10px] text-gray-400">
+        Order data retrieved from Farm2Feast Store backend.
+      </div>
+
+    </div>
+  );
+}
+
+// ==========================================
+// MAIN ADMIN AI CHAT WINDOW
+// ==========================================
+
 export default function AdminAIChatWindow({
   onClose
 }: AdminAIChatWindowProps) {
+
   const {
     messages,
     conversationId,
@@ -181,7 +347,6 @@ export default function AdminAIChatWindow({
     }
 
     try {
-      // Image is optional for product updates.
       await confirmOperation();
     } catch {
       // The hook displays the error message.
@@ -230,6 +395,10 @@ export default function AdminAIChatWindow({
     startNewConversation();
   };
 
+  // ==========================================
+  // MODE LABEL
+  // ==========================================
+
   const getModeLabel = () => {
     switch (mode) {
       case "ADD_PRODUCT":
@@ -245,6 +414,10 @@ export default function AdminAIChatWindow({
         return "Admin assistant";
     }
   };
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
     <div className="
@@ -305,6 +478,7 @@ export default function AdminAIChatWindow({
       ">
 
         {messages.map(message => (
+
           <div
             key={message.id}
             className={`flex ${
@@ -314,7 +488,11 @@ export default function AdminAIChatWindow({
             }`}
           >
 
-            <div className="flex max-w-[90%] items-start gap-2">
+            <div className={`flex items-start gap-2 ${
+              message.role === "user"
+                ? "max-w-[90%]"
+                : "w-full min-w-0"
+            }`}>
 
               {message.role === "assistant" && (
                 <div className="
@@ -325,20 +503,43 @@ export default function AdminAIChatWindow({
                 </div>
               )}
 
-              <div className={`
-                whitespace-pre-wrap break-words
-                rounded-2xl px-4 py-3 text-sm leading-relaxed
-                ${
-                  message.role === "user"
-                    ? "rounded-br-sm bg-green-700 text-white"
-                    : "rounded-bl-sm border border-gray-100 bg-white text-gray-800 shadow-sm"
-                }
-              `}>
-                {message.content}
+              <div className="min-w-0 flex-1">
+
+                <div className={`
+                  whitespace-pre-wrap break-words
+                  rounded-2xl px-4 py-3 text-sm leading-relaxed
+                  ${
+                    message.role === "user"
+                      ? "rounded-br-sm bg-green-700 text-white"
+                      : "rounded-bl-sm border border-gray-100 bg-white text-gray-800 shadow-sm"
+                  }
+                `}>
+                  {message.content}
+                </div>
+
+                {/* DISPLAY ORDER TABLE */}
+
+                {message.role === "assistant" &&
+                  message.orderData !== undefined &&
+                  message.orderData !== null &&
+                  (
+                    message.orderDataType === "ALL_ORDERS" ||
+                    message.orderDataType === "SINGLE_ORDER"
+                  ) && (
+
+                    <OrderTable
+                      data={message.orderData}
+                      type={message.orderDataType}
+                    />
+
+                  )}
+
               </div>
 
             </div>
+
           </div>
+
         ))}
 
         {isLoading && (

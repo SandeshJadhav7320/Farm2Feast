@@ -42,6 +42,9 @@ export interface AdminAssistantChatResponse {
   reply: string;
   draft: AdminProductDraft | AdminProductUpdateDraft | null;
   readyForConfirmation: boolean;
+
+  orderData?: unknown;
+  orderDataType?: string | null;
 }
 
 export interface AdminAssistantConfirmResponse {
@@ -63,6 +66,9 @@ export interface AdminChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+
+  orderData?: unknown;
+  orderDataType?: string | null;
 }
 
 // The operation selected by the backend for this conversation.

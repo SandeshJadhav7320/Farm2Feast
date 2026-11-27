@@ -47,16 +47,22 @@ export function useAdminAIChat() {
 
   const requestInProgress = useRef(false);
 
-  const addAssistantMessage = (content: string) => {
-    setMessages(previous => [
-      ...previous,
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content
-      }
-    ]);
-  };
+ const addAssistantMessage = (
+  content: string,
+  orderData?: unknown,
+  orderDataType?: string | null
+) => {
+  setMessages(previous => [
+    ...previous,
+    {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content,
+      orderData,
+      orderDataType
+    }
+  ]);
+};
 
   const resetOperation = () => {
     setConversationId(null);
@@ -107,7 +113,11 @@ export function useAdminAIChat() {
         response.readyForConfirmation
       );
 
-      addAssistantMessage(response.reply);
+      addAssistantMessage(
+        response.reply,
+        response.orderData,
+        response.orderDataType
+      );
     } catch (err) {
       const errorMessage =
         err instanceof Error
