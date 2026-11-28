@@ -92,4 +92,17 @@ public class AdminOrderController {
                     orderService.getOrderByIdForAdmin(orderId)
             );
         }
+
+        @PatchMapping("/{orderId}/payment-status")
+        public ResponseEntity<OrderResponse> updatePaymentStatus(
+                @PathVariable Long orderId,
+                @RequestBody Map<String, String> request) {
+
+        String paymentStatus = request.get("paymentStatus");
+
+        OrderResponse updatedOrder =
+                orderService.updatePaymentStatus(orderId, paymentStatus);
+
+        return ResponseEntity.ok(updatedOrder);
+        }
 }

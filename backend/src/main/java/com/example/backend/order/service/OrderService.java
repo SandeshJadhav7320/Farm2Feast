@@ -424,4 +424,39 @@ public class OrderService {
 
         return mapToResponse(order);
         }
+
+
+        @Transactional
+        public OrderResponse updatePaymentStatus(
+                Long orderId,
+                String paymentStatus) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Order not found: " + orderId));
+
+        PaymentStatus newStatus;
+
+        try {
+                newStatus = PaymentStatus.valueOf(
+                        paymentStatus.trim().toUpperCase());
+        } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Invalid payment status. Use PENDING, PAID, FAILED, or REFUNDED.");
+        }
+
+        if (order.getStatus() == OrderStatus.CANCELLED
+                && newStatus == PaymentStatus.PAID) {
+                throw new IllegalArgumentException(
+                        "Cancelled orders cannot be marked as paid.");
+        }
+
+        order.setPaymentStatus(newStatus);
+
+        Order savedOrder = orderRepository.save(order);
+
+        return mapToResponse(savedOrder);
+        }
+
 }
