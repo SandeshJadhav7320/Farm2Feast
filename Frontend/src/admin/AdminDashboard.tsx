@@ -199,7 +199,7 @@ export default function AdminDashboard() {
       const token = sessionStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:8080/api/admin/orders/revenue-trend?days=${chartDays}`,
+        `https://farm2feast.onrender.com/api/admin/orders/revenue-trend?days=${chartDays}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
