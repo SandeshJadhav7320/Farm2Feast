@@ -266,6 +266,79 @@ export default function OrdersManagement() {
     }
   }
 
+
+async function handlePaymentStatusChange(
+  order: Order,
+  newPaymentStatus: string,
+) {
+  if (
+    newPaymentStatus === order.paymentStatus ||
+    updatingId !== null
+  ) {
+    return;
+  }
+
+  if (
+    newPaymentStatus === "PAID" &&
+    order.status === "CANCELLED"
+  ) {
+    setError("Cancelled orders cannot be marked as paid.");
+    return;
+  }
+
+  const previousOrders = orders;
+
+  setUpdatingId(order.id);
+  setError("");
+  setNotice("");
+
+  // Update the screen immediately.
+  setOrders((current) =>
+    current.map((item) =>
+      item.id === order.id
+        ? { ...item, paymentStatus: newPaymentStatus }
+        : item
+    )
+  );
+
+  try {
+    const updatedOrder = await apiRequest<Order>(
+      `/api/admin/orders/${order.id}/payment-status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          paymentStatus: newPaymentStatus,
+        }),
+      }
+    );
+
+    setOrders((current) =>
+      current.map((item) =>
+        item.id === order.id ? updatedOrder : item
+      )
+    );
+
+    setSelectedOrder((current) =>
+      current?.id === order.id ? updatedOrder : current
+    );
+
+    setNotice(
+      `Order #${order.id} payment updated to ${readableStatus(updatedOrder.paymentStatus)}.`
+    );
+  } catch (err) {
+    setOrders(previousOrders);
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Could not update payment status."
+    );
+  } finally {
+    setUpdatingId(null);
+  }
+}
+
+
   async function handleShipOrder() {
   if (!shippingOrder) return;
 
@@ -519,14 +592,41 @@ export default function OrdersManagement() {
                         {formatCurrency(order.totalAmount)}
                       </td>
 
+                      
                       <td className="px-5 py-5">
                         <p className="font-medium text-stone-800">
                           {readableStatus(order.paymentMethod || "—")}
                         </p>
-                        <p className="mt-1 text-xs text-stone-500">
-                          Payment: {readableStatus(order.paymentStatus || "—")}
-                        </p>
+
+                        <div className="mt-2">
+                          <select
+                            value={order.paymentStatus}
+                            disabled={
+                              updatingId !== null ||
+                              order.status === "CANCELLED"
+                            }
+                            onChange={(event) =>
+                              void handlePaymentStatusChange(
+                                order,
+                                event.target.value
+                              )
+                            }
+                            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-medium outline-none focus:border-green-600 disabled:bg-stone-100"
+                          >
+                            <option value="PENDING">Pending</option>
+                            <option value="PAID">Paid</option>
+                            <option value="FAILED">Failed</option>
+                            <option value="REFUNDED">Refunded</option>
+                          </select>
+
+                          {updatingId === order.id && (
+                            <p className="mt-1 text-xs text-green-700">
+                              Saving payment...
+                            </p>
+                          )}
+                        </div>
                       </td>
+
 
                       <td className="px-5 py-5">
                         <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold ${statusClasses(order.status)}`}>
@@ -788,10 +888,33 @@ export default function OrdersManagement() {
                   label="Payment method"
                   value={readableStatus(selectedOrder.paymentMethod || "—")}
                 />
-                <Detail
-                  label="Payment status"
-                  value={readableStatus(selectedOrder.paymentStatus || "—")}
-                />
+                
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+                    Payment status
+                  </p>
+
+                  <select
+                    value={selectedOrder.paymentStatus}
+                    disabled={
+                      updatingId !== null ||
+                      selectedOrder.status === "CANCELLED"
+                    }
+                    onChange={(event) =>
+                      void handlePaymentStatusChange(
+                        selectedOrder,
+                        event.target.value
+                      )
+                    }
+                    className="mt-2 w-full rounded-lg border border-stone-200 bg-white p-2 text-sm outline-none focus:border-green-600 disabled:bg-stone-100"
+                  >
+                    <option value="PENDING">Pending</option>
+                    <option value="PAID">Paid</option>
+                    <option value="FAILED">Failed</option>
+                    <option value="REFUNDED">Refunded</option>
+                  </select>
+                </div>
+
               </div>
 
               {/* Shipping information */}
